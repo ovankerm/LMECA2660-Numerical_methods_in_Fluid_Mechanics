@@ -1,13 +1,18 @@
 CC = gcc
 CFLAGS = -Wall
+TARGET = run
 
-hello : main.c
-	${CC} ${CFLAGS} main.c -o main
+hello : main.c src/functions.o
+	${CC} ${CFLAGS} -o ${TARGET} $^
 
 clean : 
-	rm -f main
+	rm -f ${TARGET}
+	rm -f src/*.o
+
+cleanFiles : 
+	rm -f output/*.txt
 
 all :
 	make hello
-	./main
+	./${TARGET}
 	make clean

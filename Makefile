@@ -1,8 +1,12 @@
 CC = gcc
 CFLAGS = -Wall
 TARGET = run
+SOURCES = main.c src/functions.o
 
-hello : main.c src/functions.o
+%.o: %.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+hello : ${SOURCES}
 	${CC} ${CFLAGS} -o ${TARGET} $^
 
 clean : 

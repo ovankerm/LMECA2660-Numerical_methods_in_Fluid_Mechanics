@@ -98,10 +98,33 @@ void RK4Iteration(problem *problem){
     free(dU);
 }
 
+void computeDiagnostics(problem *problem){
+    int i;
+    double I = 0;
+    double E = 0;
+    double R = 0;
+    double U, Ur;
+    double factor = problem->h / problem->sigma;
+    for(i = 0; i < problem->N; i++){
+        U = problem->U[i];
+        Ur = exactGaussian(problem->X[i], problem->t, problem->sigma, problem->c);
+        I += U;
+        E += U*U;
+        R += (U - Ur) * (U - Ur);
+    }
+    I *= factor;
+    E *= factor;
+    R *= factor;
+}
+
 void initialConditionGaussian(problem *problem){
     int i;
     for(i = 0; i < problem->N; i++){
         double value = exp(-problem->X[i] * problem->X[i]/(problem->sigma * problem->sigma));
         problem->U[i] = fabs(value) < 1e-12 ? 0 : value;
     }
+}
+
+double exactGaussian(double x, double t, double sigma, double c){
+    return exp(-(x - c * t) * (x - c * t)/(sigma * sigma));
 }

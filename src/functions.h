@@ -11,13 +11,16 @@ typedef struct{
     double h;
     double L;
     double sigma;
-    double U_0;
     double c;
     double t;
     double dt;
     void (*integrator)(double *, double *, double , double , double , int);
     double *X;
     double *U;
+
+    double I;
+    double E;
+    double R;
 } problem;
 
 // Space integrators
@@ -31,7 +34,9 @@ void problemToFile(problem *problem, const char* filename);
 
 void RK4Iteration(problem *problem);
 
-void initialConditionGaussian(problem *problem);
+void computeDiagnostics(problem *problem);
 
+void initialConditionGaussian(problem *problem);
+double exactGaussian(double x, double t, double sigma, double c);
 
 #endif

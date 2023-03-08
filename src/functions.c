@@ -1,7 +1,7 @@
 #include "functions.h"
 #include "thomas.h"
 
-int IND(i, N) {return i % N;}
+int IND(i, N) {return (i+N) % N;}
 
 const double RK4_alpha[4] = {0.0, 1.0/2.0, 1.0/2.0, 1.0};
 const double RK4_gamma[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
@@ -30,8 +30,15 @@ void I4(double *U, double *dU, double h, double c, double dt, int N){
     free(q);
 }
 
-problem *initProblem(int N, double L, void (*integrator)(double *, double *, double , double , double , int)){
-    problem *problem = malloc(sizeof(problem));
+void ED(double *U, double *dU, double h, double c, double dt, int N){
+    int i;
+    for(i = 0; i < N; i++){
+        dU[IND(i, N)] = -c * dt * 1/(6 * h) * (U[IND(i-2, N)] - 6 * U[IND(i-1, N)] + 3 * U[IND(i, N)] + 2 * U[IND(i+1, N)]);
+    }
+}
+
+myProblem *initProblem(int N, double L, void (*integrator)(double *, double *, double , double , double , int)){
+    myProblem *problem = malloc(sizeof(myProblem));
     problem->N = N;
     problem->L = L;
     problem->h = L/((double) N);
@@ -40,13 +47,13 @@ problem *initProblem(int N, double L, void (*integrator)(double *, double *, dou
     problem->t = 0.0;
     problem->dt = 0.001;
     problem->X = malloc(N * sizeof(double));
-    problem->U = malloc(N * sizeof(double));
+    problem->U = calloc(N, sizeof(double));
 
     problem->integrator = integrator;
 
     int i;
     for(i = 0; i < problem->N; i++){
-        problem->X[i] = -problem->L/2  + i * problem->h;
+        problem->X[i] = -problem->L/2.0  + i * problem->h;
     }
 
     initialConditionGaussian(problem);
@@ -54,13 +61,13 @@ problem *initProblem(int N, double L, void (*integrator)(double *, double *, dou
     return problem;
 }
 
-void freeProblem(problem *problem){
+void freeProblem(myProblem *problem){
     free(problem->X);
     free(problem->U);
     free(problem);
 }
 
-void problemToFile(problem *problem, const char *filename){
+void problemToFile(myProblem *problem, const char *filename){
     int i;
     FILE *file = fopen(filename, "w");
     if(file == NULL) return;
@@ -71,14 +78,18 @@ void problemToFile(problem *problem, const char *filename){
     fclose(file);
 }
 
-void RK4Iteration(problem *problem){
+void RK4Iteration(myProblem *problem){
     int i,j;
     double ts, tl;
-    double *Ul = malloc(problem->N * sizeof(double));
-    double *Us = malloc(problem->N * sizeof(double));
-    double *dU = malloc(problem->N * sizeof(double));
-    memcpy(Us, problem->U, problem->N * sizeof(double));
+    double *Ul = calloc(problem->N, sizeof(double));
+    double *Us = calloc(problem->N, sizeof(double));
+    double *dU = calloc(problem->N, sizeof(double));
+
+    for(i = 0; i < problem->N; i++){
+        Us[i] = problem->U[i];
+    }
     ts = problem->t;
+
     for(i = 0; i < 4; i++){
         for(j = 0; j < problem->N; j++){
             Ul[j] = Us[j] + RK4_alpha[i] * dU[j];
@@ -98,7 +109,7 @@ void RK4Iteration(problem *problem){
     free(dU);
 }
 
-void computeDiagnostics(problem *problem){
+void computeDiagnostics(myProblem *problem){
     int i;
     double I = 0;
     double E = 0;
@@ -117,7 +128,7 @@ void computeDiagnostics(problem *problem){
     R *= factor;
 }
 
-void initialConditionGaussian(problem *problem){
+void initialConditionGaussian(myProblem *problem){
     int i;
     for(i = 0; i < problem->N; i++){
         double value = exp(-problem->X[i] * problem->X[i]/(problem->sigma * problem->sigma));

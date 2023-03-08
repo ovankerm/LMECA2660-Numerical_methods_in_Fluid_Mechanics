@@ -1,12 +1,12 @@
-CC = gcc
-CFLAGS = -Wall
+CC = clang
+CFLAGS = -O3 -Wall #-g -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
 TARGET = run
 SOURCES = main.c src/functions.o
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-hello : ${SOURCES}
+exec : ${SOURCES}
 	${CC} ${CFLAGS} -o ${TARGET} $^
 
 clean : 
@@ -17,6 +17,6 @@ cleanFiles :
 	rm -f output/*.txt
 
 all :
-	make hello
+	make exec
 	./${TARGET}
 	make clean

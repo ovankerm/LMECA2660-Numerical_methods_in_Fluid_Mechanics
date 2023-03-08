@@ -21,22 +21,24 @@ typedef struct{
     double I;
     double E;
     double R;
-} problem;
+} myProblem;
 
 // Space integrators
 void E2(double *U, double *dU, double h, double c, double dt, int N);
 void E4(double *U, double *dU, double h, double c, double dt, int N);
 void I4(double *U, double *dU, double h, double c, double dt, int N);
+void ED(double *U, double *dU, double h, double c, double dt, int N);
 
-problem *initProblem(int N, double L, void (*integrator)(double *, double *, double , double , double , int));
-void freeProblem(problem *problem);
-void problemToFile(problem *problem, const char* filename);
+// Time integration
+void RK4Iteration(myProblem *problem);
 
-void RK4Iteration(problem *problem);
+myProblem *initProblem(int N, double L, void (*integrator)(double *, double *, double , double , double , int));
+void freeProblem(myProblem *problem);
+void problemToFile(myProblem *problem, const char* filename);
 
-void computeDiagnostics(problem *problem);
+void computeDiagnostics(myProblem *problem);
 
-void initialConditionGaussian(problem *problem);
+void initialConditionGaussian(myProblem *problem);
 double exactGaussian(double x, double t, double sigma, double c);
 
 #endif

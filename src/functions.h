@@ -34,7 +34,7 @@ void RK4Iteration(myProblem *problem);
 
 myProblem *initProblem(int N, double L, void (*integrator)(double *, double *, double , double , double , int));
 void freeProblem(myProblem *problem);
-void problemToFile(myProblem *problem, const char* filename);
+void problemToFile(myProblem *problem, const char *basename);
 
 void computeDiagnostics(myProblem *problem);
 

@@ -1,67 +1,38 @@
 import numpy as np
 from matplotlib import pyplot as plt
-
-# with open("output/E2.txt") as f:
-#     line = f.readline().split()
-#     L = float(line[2])
-#     N = int(line[5])
-#     h = float(line[8])
-    
-#     X = np.zeros(N)
-#     U = np.zeros(N)
-
-#     for i in range(N):
-#         line = f.readline().split()
-#         X[i] = float(line[5])
-#         U[i] = float(line[8])
-
-# exact = np.exp(-(np.power(X - 1, 2)))
-# fig, ax = plt.subplots(figsize=(10, 7))
-# ax.plot(X, U)
-# ax.plot(X, exact)
-# ax.scatter(X, U)
-
-with open("output/E4.txt") as f:
-    line = f.readline().split()
-    L = float(line[2])
-    N = int(line[5])
-    h = float(line[8])
-    
-    X = np.zeros(N)
-    U = np.zeros(N)
-
-    for i in range(N):
-        line = f.readline().split()
-        X[i] = float(line[5])
-        U[i] = float(line[8])
-
-exact = np.exp(-(np.power(X - 1, 2)))
+from matplotlib.animation import FuncAnimation 
+   
 fig, ax = plt.subplots(figsize=(10, 7))
-ax.plot(X, U)
-ax.plot(X, exact)
-ax.scatter(X, U)
+ax.set_xlim((-8, 8))
+ax.set_ylim((-1, 1.1))
+ax.grid()
 
+lineE2, = ax.plot([], []) 
+   
+def initE2(): 
+    return animateE2(0)
+   
+def animateE2(i):
+    with open("output/E2-%.4f.txt"%(0.1*i)) as f:
+        l = f.readline().split()
+        L = float(l[2])
+        N = int(l[5])
+        h = float(l[8])
+        
+        X = np.zeros(N)
+        U = np.zeros(N)
 
-# with open("output/I4.txt") as f:
-#     line = f.readline().split()
-#     L = float(line[2])
-#     N = int(line[5])
-#     h = float(line[8])
-    
-#     X = np.zeros(N)
-#     U = np.zeros(N)
+        for i in range(N):
+            l = f.readline().split()
+            X[i] = float(l[5])
+            U[i] = float(l[8])
 
-#     for i in range(N):
-#         line = f.readline().split()
-#         X[i] = float(line[5])
-#         U[i] = float(line[8])
-
-# exact = np.exp(-(np.power(X - 1, 2)))
-# fig, ax = plt.subplots(figsize=(10, 7))
-# ax.plot(X, U)
-# ax.plot(X, exact)
-# ax.scatter(X, U)
-
+    lineE2.set_data(X, U)
+      
+    return lineE2,
+   
+animE2 = FuncAnimation(fig, animateE2, init_func = initE2,
+                     frames = 1000, interval = 100, blit = True)
 
 
 plt.show()

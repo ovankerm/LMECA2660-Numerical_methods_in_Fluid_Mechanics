@@ -47,7 +47,7 @@ myProblem *initProblem(int N, double L, void (*integrator)(double *, double *, d
     problem->t = 0.0;
     problem->dt = 0.001;
     problem->X = malloc(N * sizeof(double));
-    problem->U = calloc(N, sizeof(double));
+    problem->U = malloc(N * sizeof(double));
 
     problem->integrator = integrator;
 
@@ -67,10 +67,14 @@ void freeProblem(myProblem *problem){
     free(problem);
 }
 
-void problemToFile(myProblem *problem, const char *filename){
+void problemToFile(myProblem *problem, const char *baseResult){
     int i;
-    FILE *file = fopen(filename, "w");
+    const char *basename = "%s-%.4f.txt";
+    char filename[256];
+    sprintf(filename,basename,baseResult,problem->t);
+    FILE* file = fopen(filename,"w");
     if(file == NULL) return;
+
     fprintf(file, "L = %f  N = %d  h = %f\n", problem->L, problem->N, problem->h);
     for(i = 0; i < problem->N; i++){
         fprintf(file, "i = %d  Xi = %e Ui = %e\n", i, problem->X[i], problem->U[i]);
@@ -81,8 +85,8 @@ void problemToFile(myProblem *problem, const char *filename){
 void RK4Iteration(myProblem *problem){
     int i,j;
     double ts, tl;
-    double *Ul = calloc(problem->N, sizeof(double));
-    double *Us = calloc(problem->N, sizeof(double));
+    double *Ul = malloc(problem->N * sizeof(double));
+    double *Us = malloc(problem->N * sizeof(double));
     double *dU = calloc(problem->N, sizeof(double));
 
     for(i = 0; i < problem->N; i++){
@@ -131,7 +135,7 @@ void computeDiagnostics(myProblem *problem){
 void initialConditionGaussian(myProblem *problem){
     int i;
     for(i = 0; i < problem->N; i++){
-        double value = exp(-problem->X[i] * problem->X[i]/(problem->sigma * problem->sigma));
+        double value = cos(2 * M_PI * problem->X[i]) * exp(-problem->X[i] * problem->X[i]/(problem->sigma * problem->sigma));
         problem->U[i] = fabs(value) < 1e-12 ? 0 : value;
     }
 }

@@ -1,22 +1,21 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-N = 100
-x,h = np.linspace(0, 2 * np.pi, endpoint=False, retstep=True, num=N)
-u = np.sin(x)
-du = np.cos(x)
-dU = np.zeros_like(u)
-
-for i in range(len(x)):
-    dU[i] = 1/(6 * h) * (u[(i-2) % N] - 6 * u[(i-1) % N] + 3 * u[i] + 2 * u[(i+1) % N])
-
-
 kh = np.linspace(0, np.pi, num=100)
-k_star_h = -1j/6 * (np.exp(-2 * 1j * kh) - 6 * np.exp(-1j * kh) + 2 * np.exp(1j * kh) + 3)
-real = -1/6 * (np.cos(2 * kh) - 4 * np.cos(kh) + 3)
-imag = 1/6 * (np.sin(2 * kh) - 8 * np.sin(kh))
+k_star_h = 0.5 * 1j/6 * (np.exp(-2 * 1j * kh) - 6 * np.exp(-1j * kh) + 2 * np.exp(1j * kh) + 3)
 
-plt.figure()
-plt.plot(k_star_h.real, k_star_h.imag)
-# plt.plot(x, dU)
+X, Y = np.meshgrid(np.linspace(-3, 1, endpoint=True, num=1000), np.linspace(-3, 3, endpoint=True, num=1000))
+
+Z = X + 1j * Y
+
+rho = np.abs(1 + Z + 1/2 * np.power(Z, 2) + 1/6 * np.power(Z, 3) + 1/24 * np.power(Z, 4))
+
+
+
+fig, ax = plt.subplots()
+ax.grid()
+l2, = ax.plot(k_star_h.real, k_star_h.imag, 'k-')
+cs = ax.contour(X, Y, rho, colors='k', linestyles='dashed', levels=[1])
+h1,l1 = cs.legend_elements()
+ax.legend([h1[0], l2], ['RK4', 'line'])
 plt.show()

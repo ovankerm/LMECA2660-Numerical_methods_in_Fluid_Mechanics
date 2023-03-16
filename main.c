@@ -1,16 +1,18 @@
 #include "src/functions.h"
 
-int main(int argc, char **argv){
-    int i;
+const int N = 32;
 
-    myProblem *pE2 = initProblem(100, 16.0, ED);
-    for(i = 0; i < 100000; i++){
-        if((i%100) == 0){
-            problemToFile(pE2, "output/E2");
+int main(int argc, char **argv){
+    int i, j;
+
+    problemStruct *pE2 = initProblem(N, E4, "output/E2");
+    for(i = 0; i < 2; i++){
+        for(j = 0; j < N; j++){
+            RK4Iteration(pE2);
+            computeDiagnostics(pE2);
         }
-        RK4Iteration(pE2);
+        problemToFile(pE2, "output/E2");
     }
-    problemToFile(pE2, "output/E2");
     freeProblem(pE2);
 
     // myProblem *pE4 = initProblem(100, 16.0, E4);

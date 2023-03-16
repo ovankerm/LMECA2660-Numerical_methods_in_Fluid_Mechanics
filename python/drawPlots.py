@@ -2,11 +2,14 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation 
 
-# def exactGaussian(X, t, sigma):
-#     f = lambda X, t : np.exp(-np.power((X-t)/sigma, 2))
-#     Xreturn = np.append(X-1, np.append(X, X+1))
-#     Ureturn = np.append(f(X, t-1), np.append(Ur, Ur))
-#     return Xreturn, Ureturn
+def exactGaussian(time, sigma):
+    X = np.linspace(-0.5, 1.5, num=500)
+    f = lambda X, t : np.exp(-np.power((X-t)/sigma, 2))
+    U = np.zeros_like(X)
+    U += f(X, time)
+    U += f(X, time+1)
+    U += f(X, time-1)
+    return (X, U)
    
 fig, ax = plt.subplots(figsize=(10, 7))
 ax.set_xlim((-0.5, 1.5))
@@ -40,6 +43,8 @@ ax.grid()
 # animE2 = FuncAnimation(fig, animateE2, init_func = initE2,
 #                      frames = 1000, interval = 100, blit = True)
 
+colors = ["", "black", "blue"]
+
 for j in range(1, 3):
     with open("output/E2-%.4f.txt"%(0.5*j)) as f:
         l = f.readline().split()
@@ -58,14 +63,16 @@ for j in range(1, 3):
         X_tot = np.append(X, X+1)
         U = np.append(U, U)
 
-        ax.plot(X_tot, U, label="t = %.4f"%(0.5*j))
-        # Xr, Ur = exactGaussian(X, 0.5 * j, sigma)
-        # ax.plot(Xr, Ur)
-
+        ax.plot(X_tot, U, label="simulation ct/L = %.1f"%(0.5*j), linewidth=2, color=colors[j])
+        Xr, Ur = exactGaussian(0.5 * j, sigma)
+        ax.plot(Xr, Ur, label="real solution ct/L = %.1f"%(0.5*j), linestyle="dotted", color=colors[j])
+        
+ax.set_xlabel("x/L")
+ax.set_ylabel("u/U")
 ax.legend()
 
 
-fig, ax = plt.subplots(figsize=(10, 7))
+fig, ax = plt.subplots(3, 1, sharex=True, figsize=(10, 7))
 with open("output/E2-diagnostics.txt") as f:
     lines = f.readlines()
     t = np.zeros(len(lines))
@@ -78,9 +85,9 @@ with open("output/E2-diagnostics.txt") as f:
         I[i] = l[5]
         E[i] = l[8]
         R[i] = l[11]
-ax.plot(t, I, label="I")
-ax.plot(t, E, label="E")
-ax.plot(t, R, label="R")
-ax.legend()
 
+ax[0].plot(t, I, label="I")
+ax[1].plot(t, E, label="E")
+ax[2].plot(t, R, label="R")
+ax[2].set_xlabel("ct/L")
 plt.show()

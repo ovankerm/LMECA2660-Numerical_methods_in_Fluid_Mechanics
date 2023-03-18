@@ -15,7 +15,9 @@ for i, CFL in enumerate(CFLs):
 
 print(max_CFL)
 
-k_star_h *= max_CFL
+# k_star_h *= max_CFL
+
+k_star_h *= 0.5
 
 
 

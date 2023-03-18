@@ -41,7 +41,7 @@ void problemToFile(problemStruct *problem);
 
 void computeDiagnostics(problemStruct *problem);
 
-void initialConditionGaussian(problemStruct *problem, int wavePacket);
+void initialCondition(problemStruct *problem, int wavePacket);
 double exactGaussian(double x, double t, double sigma);
 
 #endif

@@ -84,7 +84,7 @@ problemStruct *initProblem(int N, void (*integrator)(double *, double *, double 
         }
     }
 
-    initialConditionGaussian(problem, wavePacket);
+    initialCondition(problem, wavePacket);
 
     return problem;
 }
@@ -169,7 +169,7 @@ void computeDiagnostics(problemStruct *problem){
     fprintf(problem->diagnostics_file, "t = %f  I = %e E = %e R = %e\n", problem->t, I, E, R);
 }
 
-void initialConditionGaussian(problemStruct *problem, int wavePacket){
+void initialCondition(problemStruct *problem, int wavePacket){
     int i;
     if(wavePacket){
         for(i = 0; i < problem->N; i++){

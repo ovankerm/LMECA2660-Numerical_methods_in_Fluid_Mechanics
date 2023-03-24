@@ -21,14 +21,16 @@ def exactPacket(time, sigma):
     return (X, U)
    
 
+#----------Plot Convergence----------#
+
 # fig, ax = plt.subplots(figsize=(10, 7))
 
-# points = [32, 64, 128]
-# h_over_sigma = [1/2, 1/4, 1/8]
+# points = [32, 64, 128, 256, 512, 1024, 2056]
+# h_over_sigma = [1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128]
 # schemes = ["E2", "ED", "E4", "I4"]
 # linestyles = ["k-", "k--", "k-.", "k:"]
 
-# errors = np.zeros((4, 3))
+# errors = np.zeros((4, 7))
 
 # for j,p in enumerate(points):
 #     for k,s in enumerate(schemes):
@@ -46,7 +48,7 @@ def exactPacket(time, sigma):
 
 # alphas = np.zeros(4)
 # for i in range(4):
-#     alphas[i] = (np.log(errors[i,2]/errors[i,0]))/(np.log(h_over_sigma[2]/h_over_sigma[0])) 
+#     alphas[i] = np.log(errors[i, -3]/errors[i, -1])/np.log(4) 
 
 # print(alphas)
 # ax.legend()
@@ -173,81 +175,104 @@ def exactPacket(time, sigma):
 
 #----------Wave Packet----------#
 
-colors = ["", "black", "blue"]
-points = [32, 64, 128]
-schemes = ["E2", "E4", "ED", "I4"]
+# colors = ["", "black", "blue"]
+# points = [32, 64, 128]
+# schemes = ["E2", "E4", "ED", "I4"]
 
-Us = np.empty((4, 2), dtype=np.ndarray)
-Xs = np.empty((4, 2), dtype=np.ndarray)
-exacts = np.empty((2, 2), dtype=np.ndarray)
+# Us = np.empty((4, 2), dtype=np.ndarray)
+# Xs = np.empty((4, 2), dtype=np.ndarray)
+# exacts = np.empty((2, 2), dtype=np.ndarray)
 
-for k in range(4):
-    for j in range(1, 3):
-        with open("output/%s_128points_wave_packet_mapping-%.4f.txt"%(schemes[k], 0.25*j)) as f:
-            l = f.readline().split()
-            sigma = float(l[2])
-            N = int(l[5])
-            h = float(l[8])
+# for k in range(4):
+#     for j in range(1, 3):
+#         with open("output/%s_128points_wave_packet_mapping-%.4f.txt"%(schemes[k], 0.25*j)) as f:
+#             l = f.readline().split()
+#             sigma = float(l[2])
+#             N = int(l[5])
+#             h = float(l[8])
                 
-            X = np.zeros(N)
-            U = np.zeros(N)
+#             X = np.zeros(N)
+#             U = np.zeros(N)
 
-            for i in range(N):
-                l = f.readline().split()
-                X[i] = float(l[5])
-                U[i] = float(l[8])
+#             for i in range(N):
+#                 l = f.readline().split()
+#                 X[i] = float(l[5])
+#                 U[i] = float(l[8])
 
 
-            X_tot = np.append(X, X+1)
-            U = np.append(U, U)
+#             X_tot = np.append(X, X+1)
+#             U = np.append(U, U)
 
-            Us[k, j-1] = U
-            Xs[k, j-1] = X_tot
-            exacts[j-1, 0], exacts[j-1, 1] = exactPacket(0.25 * j, sigma)
+#             Us[k, j-1] = U
+#             Xs[k, j-1] = X_tot
+#             exacts[j-1, 0], exacts[j-1, 1] = exactPacket(0.25 * j, sigma)
                 
-fig, ax = plt.subplots(2, 2, figsize=(13, 10))
-fig.suptitle('Simulations using 128 points (h/L = %.4e) of a wave packet'%(1/128), y=0.93)
-for j in range(4):
-    for k in range(1, 3):
-        ax[j//2, j%2].set_xlim((-0.5, 1.5))
-        ax[j//2, j%2].set_ylim((-0.8, 1.8))
-        ax[j//2, j%2].grid(visible=True)
-        ax[j//2, j%2].set_title("%s scheme"%(schemes[j]))
-        ax[j//2, j%2].plot(Xs[j, k-1], Us[j, k-1], label="u/U at ct/L = %.2f"%(0.25*k), linestyle="solid", color=colors[k])
-        ax[j//2, j%2].plot(exacts[k-1, 0], exacts[k-1, 1], label="Exact solution at ct/L = %.2f"%(0.25*k), linestyle="dotted", color=colors[k])
-        ax[j//2, j%2].legend(loc='upper left')
-        ax[j//2, j%2].set_ylabel("u/U")
-        ax[j//2, j%2].set_xlabel("x/L")
+# fig, ax = plt.subplots(2, 2, figsize=(13, 10))
+# fig.suptitle('Simulations using 128 points (h/L = %.4e) of a wave packet'%(1/128), y=0.93)
+# for j in range(4):
+#     for k in range(1, 3):
+#         ax[j//2, j%2].set_xlim((-0.5, 1.5))
+#         ax[j//2, j%2].set_ylim((-0.8, 1.8))
+#         ax[j//2, j%2].grid(visible=True)
+#         ax[j//2, j%2].set_title("%s scheme"%(schemes[j]))
+#         ax[j//2, j%2].plot(Xs[j, k-1], Us[j, k-1], label="Simulated solution at ct/L = %.2f"%(0.25*k), linestyle="solid", color=colors[k])
+#         ax[j//2, j%2].plot(exacts[k-1, 0], exacts[k-1, 1], label="Exact solution at ct/L = %.2f"%(0.25*k), linestyle="dotted", color=colors[k])
+#         ax[j//2, j%2].legend(loc='upper left')
+#         ax[j//2, j%2].set_ylabel("u/U")
+#         ax[j//2, j%2].set_xlabel("x/L")
 
-fig.savefig("images/solutions_wave_packet.eps", format='eps')
+# fig.savefig("images/solutions_wave_packet.eps", format='eps')
 
 
 
 #----------Plot Diagnostics----------#
 
-# fig, ax = plt.subplots(3, 1, sharex=True, figsize=(10, 7))
-# with open("output/%s_%dpoints-diagnostics.txt"%(schemes[0], points[0])) as f:
-#     lines = f.readlines()
-#     t = np.zeros(len(lines))
-#     I = np.zeros(len(lines))
-#     E = np.zeros(len(lines))
-#     R = np.zeros(len(lines))
-#     for i, l in enumerate(lines):
-#         l = l.split()
-#         t[i] = l[2]
-#         I[i] = l[5]
-#         E[i] = l[8]
-#         R[i] = l[11]
+colors = ["", "black", "blue"]
+points = [32, 64, 128]
+schemes = ["E2", "E4", "ED", "I4"]
+linestyles = ["k-", "k-.", "k:"]
 
-# labels = ["I", "E", "R"]
-# data = [I, E, R]
+diagnostics = np.empty((3, 4, 3), dtype=np.ndarray)
+ts = np.empty((3, 4), dtype=np.ndarray)
 
-# for i in range(3):
-#     ax[i].plot(t, data[i])
-#     ax[i].set_title(labels[i])
+for i in range(3):
+    for j in range(4):
+        with open("output/%s_%dpoints-diagnostics.txt"%(schemes[j], points[i])) as f:
+            lines = f.readlines()
+            t = np.zeros(len(lines))
+            I = np.zeros(len(lines))
+            E = np.zeros(len(lines))
+            R = np.zeros(len(lines))
+            for k, l in enumerate(lines):
+                l = l.split()
+                t[k] = l[2]
+                I[k] = l[5]
+                E[k] = l[8]
+                R[k] = l[11]
+
+            diagnostics[i,j,0] = I
+            diagnostics[i,j,1] = E
+            diagnostics[i,j,2] = R
+            ts[i,j] = t
+
+labels = ["I", "E", "R"]
+
+for j in range(4):
+    fig, ax = plt.subplots(3, figsize=(10, 8), sharex=True)
+    fig.suptitle('Diagnostics for the %s scheme'%(schemes[j]), y=0.93, fontsize='x-large')
+    for i in range(3):
+        for k in range(3):
+            ax[k].plot(ts[i, j], diagnostics[i, j, k],linestyles[i], label='Using %d points'%points[i])
+            ax[k].set_ylabel(labels[k], rotation='horizontal', labelpad=15.0, fontsize='large')
+            ax[k].grid()
+        ax[0].legend()
+        ax[-1].set_xlabel("ct/L")
+    fig.savefig("images/diagnostics_%s.eps"%schemes[j], format='eps')
+    
 
 
-# ax[2].set_xlabel("ct/L")
+
+            
 plt.show()
 
 

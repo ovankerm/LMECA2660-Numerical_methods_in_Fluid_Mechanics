@@ -1,6 +1,8 @@
 #include "functions.h"
 #include "thomas.h"
 
+#define EPS 2.220446049250313e-16
+
 int IND(i, N) {return (i+N) % N;}
 
 const double RK4_alpha[4] = {0.0, 1.0/2.0, 1.0/2.0, 1.0};
@@ -166,6 +168,7 @@ void computeDiagnostics(problemStruct *problem){
     I *= factor;
     E *= factor;
     R *= factor;
+    printf("t = %f  I = %e E = %e R = %e\n", problem->t, I, E, R);
     fprintf(problem->diagnostics_file, "t = %f  I = %e E = %e R = %e\n", problem->t, I, E, R);
 }
 
@@ -174,12 +177,12 @@ void initialCondition(problemStruct *problem, int wavePacket){
     if(wavePacket){
         for(i = 0; i < problem->N; i++){
             double value = 1/problem->b[i] * cos(16 * M_PI * problem->X[i]) * exp(-problem->X[i] * problem->X[i]/(problem->sigma * problem->sigma));
-            problem->U[i] = fabs(value) < 1e-12 ? 0 : value;
+            problem->U[i] = fabs(value) < EPS ? 0 : value;
         }
     } else {
         for(i = 0; i < problem->N; i++){
             double value = 1/problem->b[i] * exp(-problem->X[i] * problem->X[i]/(problem->sigma * problem->sigma));
-            problem->U[i] = fabs(value) < 1e-12 ? 0 : value;
+            problem->U[i] = fabs(value) < EPS ? 0 : value;
         }
     }
 }

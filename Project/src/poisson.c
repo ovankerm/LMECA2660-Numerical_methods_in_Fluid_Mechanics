@@ -1,4 +1,3 @@
-
 #include <mpi.h>
 #include "poisson.h"
 
@@ -71,7 +70,7 @@ void poisson_solver(Poisson_data *data)
 /*
 
 Compute the discretized laplacian of phi
-we need to set a value of phi, ex, 
+we need to set a value of phi, ex, phi[0] = 0
 
 */
 void computeLaplacianMatrix(Mat A, int rowStart, int rowEnd)

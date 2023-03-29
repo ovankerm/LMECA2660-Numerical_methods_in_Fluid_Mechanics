@@ -1,20 +1,19 @@
 #include "src/poisson.h"
+#include "src/functions.h"
 
 int main(int argc, char *argv[]){
 
-    PetscInitialize(&argc, &argv, 0, 0);
+    // PetscInitialize(&argc, &argv, 0, 0);
 
-    /*WRITE YOUR PROJECT ...*/
-    Poisson_data *data = malloc(sizeof(Poisson_data));
-    initialize_poisson_solver(data);
+    problem_struct *problem = create_problem(3);
 
-    VecView(data->b, PETSC_VIEWER_STDOUT_WORLD);
-    VecSet(data->b, 1.0);
-    VecView(data->b, PETSC_VIEWER_STDOUT_WORLD);
+    int i;
+    for(i = 0; i < 100; i++){
+        add_phi_P(problem);
+    }
 
-    free_poisson_solver(data);
-    free(data);
+    print_mesh(problem->mesh);
+    free_problem(problem);
 
-    PetscFinalize();
-
+    // PetscFinalize();
 }

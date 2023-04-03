@@ -18,7 +18,7 @@ typedef struct {
 } Poisson_data;
 
 PetscErrorCode initialize_poisson_solver(Poisson_data* data);
-void poisson_solver(Poisson_data *data);
+void poisson_solver(Poisson_data *data, double *phi);
 void free_poisson_solver(Poisson_data* data);
 
 #endif

@@ -26,7 +26,7 @@ void computeRHS(double *rhs, PetscInt rowStart, PetscInt rowEnd)
 /*Modification to do :*/
 /*    - Change the call to computeRHS as you have to modify its prototype too*/
 /*    - Copy solution of the equation into your vector PHI*/
-void poisson_solver(Poisson_data *data)
+void poisson_solver(Poisson_data *data, double *phi)
 {
 
     /* Solve the linear system Ax = b for a 2-D poisson equation on a structured grid */
@@ -97,7 +97,7 @@ PetscErrorCode initialize_poisson_solver(Poisson_data* data)
     PetscInt rowEnd; /*rowEnd = the number of unknows*/
     PetscErrorCode ierr;
 
-	  int nphi = 2; /*WRITE HERE THE NUMBER OF UNKNOWS*/
+	int nphi = 2; /*WRITE HERE THE NUMBER OF UNKNOWS*/
 
     /* Create the right-hand-side vector : b */
     VecCreate(PETSC_COMM_WORLD, &(data->b));

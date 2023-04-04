@@ -26,4 +26,4 @@ clean :
 
 #Delete of results
 clean_files :
-	rm -vf results/*.txt results/P-* results/U-* results/V-* results/Reh-* results/Vtx-* results/Rehw-* results/Div-*
+	rm -vf output/*.txt output/P-* output/U-* output/V-* output/Reh-* output/Vtx-* output/Rehw-* output/Div-*

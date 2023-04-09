@@ -32,8 +32,7 @@ void computeRHS(double *rhs, PetscInt rowStart, PetscInt rowEnd, double *u_star,
     }
 
     int r = rowStart;
-    rhs[r] = 0.0;
-    for(r=rowStart + 1; r<rowEnd ; r++){
+    for(r=rowStart; r<rowEnd ; r++){
         i = (int) r/(Ny - 1);
         j = r%(Ny - 1);
 		rhs[r] = 1/(dt * h) * (u_star[U_INDEX(i+1, j+1, Ny)] - u_star[U_INDEX(i, j+1, Ny)] + v_star[V_INDEX(i+1, j+1, Ny)] - v_star[V_INDEX(i+1, j, Ny)]); /*WRITE HERE (nabla dot u_star)/dt at each mesh point r*/
@@ -80,7 +79,7 @@ void poisson_solver(Poisson_data *data, double *phi, double *u_star, double *v_s
 
     int r;
     for(r=rowStart; r<rowEnd; r++){
-        phi[r-rowStart] = sol[r];
+        phi[r] = sol[r];
     }
 
     VecRestoreArray(x, &sol);
@@ -103,32 +102,29 @@ void computeLaplacianMatrix(Mat A, int rowStart, int rowEnd, int Nx, int Ny)
 {
     int i,j;
     int r;
-    MatSetValue(A, 0, 0 , 1.0, INSERT_VALUES);
     for(j = 1; j < Ny - 2; j++){
         r = rowStart + PHI_IND(0, j, Ny);
-        MatSetValue(A, r, r , -3.0, INSERT_VALUES);
-        MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
-    }
-    for(j = 1; j < Ny - 2; j++){
+        MatSetValue(A, r, r , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
         r = rowStart + PHI_IND(Nx-2, j, Ny);
-        MatSetValue(A, r, r , -3.0, INSERT_VALUES);
-        MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+        MatSetValue(A, r, r , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
     }
     for(i = 1; i < Nx - 2; i++){
         r = rowStart + PHI_IND(i, 0, Ny);
-        MatSetValue(A, r, r , -3.0, INSERT_VALUES);
-        MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+        MatSetValue(A, r, r , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
         r = rowStart + PHI_IND(i, Ny - 2, Ny);
-        MatSetValue(A, r, r , -3.0, INSERT_VALUES);
-        MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+        MatSetValue(A, r, r , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
+        // MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
         for(j = 1; j < Ny - 2; j++){
             r = rowStart + PHI_IND(i, j, Ny);
             MatSetValue(A, r, r , -4.0, INSERT_VALUES);
@@ -139,20 +135,25 @@ void computeLaplacianMatrix(Mat A, int rowStart, int rowEnd, int Nx, int Ny)
         }
     }
 
+    r = rowStart + PHI_IND(0, 0, Ny);
+    MatSetValue(A, r, r , 1.0, INSERT_VALUES);
+    // MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
+    // MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
+
     r = rowStart + PHI_IND(0, Ny - 2, Ny);
-    MatSetValue(A, r, r , -2.0, INSERT_VALUES);
-    MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-    MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
+    MatSetValue(A, r, r , 1.0, INSERT_VALUES);
+    // MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
+    // MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
 
     r = rowStart + PHI_IND(Nx - 2, 0, Ny);
-    MatSetValue(A, r, r , -2.0, INSERT_VALUES);
-    MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-    MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+    MatSetValue(A, r, r , 1.0, INSERT_VALUES);
+    // MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
+    // MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
 
     r = rowStart + PHI_IND(Nx - 2, Ny-2, Ny);
-    MatSetValue(A, r, r , -2.0, INSERT_VALUES);
-    MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-    MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+    MatSetValue(A, r, r , 1.0, INSERT_VALUES);
+    // MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
+    // MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
 
 
     // int r;

@@ -4,10 +4,13 @@ LIB_DIR := -L/usr/local/opt/petsc/lib
 
 LIB := -lpetsc.3.18
 
-FLAGS := -Wall -Werror -O3
+FLAGS := -Wall -Werror -03
 DEBUG_FLAGS := -Wall -Werror -g -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
 
 SOURCES = main.c src/poisson.c src/functions.c
+
+exe : 
+	clang -o project $(SOURCES) -lm -lmpi $(FLAGS) $(LIB_DIR) $(LIB) $(INC_DIR)
 
 #Compilation
 all :

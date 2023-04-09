@@ -6,13 +6,13 @@ problem_struct *create_problem(int nx){
     problem->sim_data = init_data(nx);
 
 
-    // problem->poiss_data = malloc(sizeof(Poisson_data));
-    // initialize_poisson_solver(problem->poiss_data, problem->sim_data->nx, problem->sim_data->ny);
+    problem->poiss_data = malloc(sizeof(Poisson_data));
+    initialize_poisson_solver(problem->poiss_data, problem->sim_data->nx, problem->sim_data->ny);
 
-    // problem->dt = 0.02 * problem->h * problem->h * pow(problem->Gr, 1/2);
-    // problem->t = 0.0;
+    problem->dt = 0.05 * problem->sim_data->h * problem->sim_data->h/SQRT_GR;
+    problem->t = 0.0;
 
-    // printf("%f\n", problem->dt);
+    problem->iter = 0;
 
     return problem;
 }
@@ -113,6 +113,20 @@ void free_data_sim(data_sim *sim_data){
     free(sim_data);
 }
 
+void iterate(problem_struct *problem){
+    problem->t += problem->dt;
+    problem->iter++;
+    data_sim *data = problem->sim_data;
+    copy_H_n(data);
+    compute_BC(data);
+    compute_H_n(data);
+    compute_v_star(data, problem->dt);
+    poisson_solver(problem->poiss_data, data->nx, data->ny, data->u_star, data->v_star, problem->dt, data->h, data->phi_data);
+    compute_v(data, problem->dt);
+    add_phi_P(data);
+    compute_T(data, problem->dt);
+}
+
 // void print_mesh(problem_struct *problem){
 //     int i,j;
 //     printf("Nx : %d, Ny : %d, h : %f\n", problem->Nx, problem->Ny, problem->h);
@@ -130,56 +144,59 @@ void free_data_sim(data_sim *sim_data){
 //     }
 // }
 
-// void problem_to_file(problem_struct *problem){
-//     T_to_file(problem);
-//     U_to_file(problem);
-//     V_to_file(problem, "");
-// }
+void problem_to_file(problem_struct *problem){
+    T_to_file(problem);
+    U_to_file(problem);
+    V_to_file(problem);
+}
 
-// void T_to_file(problem_struct *problem){
-//     int i, j;
-//     const char *basename = "output/T-%d.txt";
-//     char filename[256];
-//     sprintf(filename,basename,problem->iter);
-//     FILE* file = fopen(filename,"w");
-//     fprintf(file, "Nx : %d Ny : %d h : %e\n", problem->Nx, problem->Ny, problem->h);
-//     for(i = 1; i < problem->Nx; i++){
-//         for(j = 1; j < problem->Ny; j++){
-//             fprintf(file, "i : %d j : %d T : %e\n", i, j, problem->T[T_IND(i, j, problem->Ny)]);
-//         }
-//     }
-//     fclose(file);
-// }
+void T_to_file(problem_struct *problem){
+    int i, j;
+    const char *basename = "output/T-%d.txt";
+    char filename[256];
+    sprintf(filename,basename,problem->iter);
+    data_sim *data = problem->sim_data;
+    FILE* file = fopen(filename,"w");
+    fprintf(file, "Nx : %d Ny : %d h : %e\n", data->nx, data->ny, data->h);
+    for(i = 1; i < data->nx; i++){
+        for(j = 1; j < data->ny; j++){
+            fprintf(file, "i : %d j : %d T : %e\n", i, j, data->T[i][j]);
+        }
+    }
+    fclose(file);
+}
 
-// void U_to_file(problem_struct *problem){
-//     int i, j;
-//     const char *basename = "output/U-%.8f.txt";
-//     char filename[256];
-//     sprintf(filename,basename,problem->t);
-//     FILE* file = fopen(filename,"w");
-//     fprintf(file, "Nx : %d Ny : %d h : %e\n", problem->Nx, problem->Ny, problem->h);
-//     for(i = 0; i < problem->Nx; i++){
-//         for(j = 1; j < problem->Ny; j++){
-//             fprintf(file, "i : %d j : %d U : %e\n", i, j, problem->u[U_IND(i, j, problem->Ny)]);
-//         }
-//     }
-//     fclose(file);
-// }
+void U_to_file(problem_struct *problem){
+    int i, j;
+    const char *basename = "output/U-%d.txt";
+    char filename[256];
+    sprintf(filename,basename,problem->iter);
+    data_sim *data = problem->sim_data;
+    FILE* file = fopen(filename,"w");
+    fprintf(file, "Nx : %d Ny : %d h : %e\n", data->nx, data->ny, data->h);
+    for(i = 0; i < data->nx; i++){
+        for(j = 1; j < data->ny; j++){
+            fprintf(file, "i : %d j : %d U : %e\n", i, j, data->u[i][j]);
+        }
+    }
+    fclose(file);
+}
 
-// void V_to_file(problem_struct *problem, const char* name){
-//     int i, j;
-//     const char *basename = "output/%s_V-%d.txt";
-//     char filename[256];
-//     sprintf(filename,basename,name,problem->iter);
-//     FILE* file = fopen(filename,"w");
-//     fprintf(file, "Nx : %d Ny : %d h : %e\n", problem->Nx, problem->Ny, problem->h);
-//     for(i = 1; i < problem->Nx; i++){
-//         for(j = 0; j < problem->Ny; j++){
-//             fprintf(file, "i : %d j : %d V : %e\n", i, j, problem->v[V_IND(i, j, problem->Ny)]);
-//         }
-//     }
-//     fclose(file);
-// }
+void V_to_file(problem_struct *problem){
+    int i, j;
+    const char *basename = "output/V-%d.txt";
+    char filename[256];
+    sprintf(filename,basename,problem->iter);
+    data_sim *data = problem->sim_data;
+    FILE* file = fopen(filename,"w");
+    fprintf(file, "Nx : %d Ny : %d h : %e\n", data->nx, data->ny, data->h);
+    for(i = 1; i < data->nx; i++){
+        for(j = 0; j < data->ny; j++){
+            fprintf(file, "i : %d j : %d V : %e\n", i, j, data->v[i][j]);
+        }
+    }
+    fclose(file);
+}
 
 // void U_star_to_file(problem_struct *problem){
 //     int i, j;
@@ -226,136 +243,6 @@ void free_data_sim(data_sim *sim_data){
 //     fclose(file);
 // }
 
-// void compute_BC(problem_struct *problem){
-//     int Nx = problem->Nx, Ny = problem->Ny;
-//     int i;
-//     for(i = 1; i < Nx - 1; i++){
-//         problem->u[U_IND(i, 0, Ny)] = -1.0/5.0 * (problem->u[U_IND(i, 3, Ny)] - 5.0 * problem->u[U_IND(i, 2, Ny)] + 15.0 * problem->u[U_IND(i, 1, Ny)]);
-//         problem->u[U_IND(i, Ny, Ny)] = problem->u[U_IND(i, Ny-1, Ny)];
-//     }
-//     for(i = 1; i < Nx; i++){
-//         problem->T[T_IND(i, 0, Ny)] = problem->T[T_IND(i, 1, Ny)] + problem->h;
-//         problem->T[T_IND(i, Ny, Ny)] = problem->T[T_IND(i, Ny - 1, Ny)] * (problem->l0/problem->h - 0.5)/(problem->l0/problem->h + 0.5);
-//     }
-//     for(i = 1; i < problem->Ny - 1; i++){
-//         problem->v[V_IND(0, i, Ny)] = -1.0/5.0 * (problem->v[V_IND(3, i, Ny)] - 5.0 * problem->v[V_IND(2, i, Ny)] + 15.0 * problem->v[V_IND(1, i, Ny)]);
-//         problem->v[V_IND(Nx, i, Ny)] = -1.0/5.0 * (problem->v[V_IND(Nx - 3, i, Ny)] - 5.0 * problem->v[V_IND(Nx - 2, i, Ny)] + 15.0 * problem->v[V_IND(Nx - 1, i, Ny)]);
-//     }
-//     for(i = 1; i < Ny; i++){
-//         problem->T[T_IND(0, i, Ny)] = problem->T[T_IND(1, i, Ny)];
-//         problem->T[T_IND(Nx, i, Ny)] = problem->T[T_IND(Nx - 1, i, Ny)];
-//     }
-// }
-
-// void compute_v_star(problem_struct *problem){
-//     int i, j;
-//     int Nx = problem->Nx, Ny = problem->Ny;
-//     double h = problem->h;
-//     double *u = problem->u;
-//     double *v = problem->v;
-//     double *P = problem->P;
-//     double *T = problem->T;
-//     double *H_n_u = problem->H_n_u;
-//     double *H_n_v = problem->H_n_v;
-//     double *H_n_1_u = problem->H_n_1_u;
-//     double *H_n_1_v = problem->H_n_1_v;
-//     for(i = 1; i < Nx - 1; i++){
-//         for(j = 1; j < Ny; j++){
-//             problem->u_star[U_IND(i, j, Ny)] = u[U_IND(i, j, Ny)] + problem->dt * (-0.5 * (3 * H_n_u[U_IND(i, j, Ny)] - H_n_1_u[U_IND(i, j, Ny)])
-//                                             - 1.0/h * (P[P_IND(i, j - 1, Ny)] - P[P_IND(i - 1, j - 1, Ny)])
-//                                             + pow(problem->Gr, -0.5)/(h*h) * (u[U_IND(i + 1, j, Ny)] + u[U_IND(i - 1, j, Ny)] + u[U_IND(i, j + 1, Ny)] + u[U_IND(i, j - 1, Ny)] - 4.0 * u[U_IND(i, j, Ny)]));
-//         }
-//     }
-
-//     for(i = 1; i < Nx; i++){
-//         for(j = 1; j < Ny - 1; j++){
-//             problem->v_star[V_IND(i, j, Ny)] = v[V_IND(i, j, Ny)] + problem->dt * (-0.5 * (3 * H_n_v[V_IND(i, j, Ny)] - H_n_1_v[V_IND(i, j, Ny)])
-//                                             - 1.0/h * (P[P_IND(i - 1, j, Ny)] - P[P_IND(i - 1, j - 1, Ny)])
-//                                             + pow(problem->Gr, -0.5)/(h*h) * (v[V_IND(i + 1, j, Ny)] + v[V_IND(i - 1, j, Ny)] + v[V_IND(i, j + 1, Ny)] + v[V_IND(i, j - 1, Ny)] - 4.0 * v[V_IND(i, j, Ny)])
-//                                             + 0.5 * (T[T_IND(i, j, Ny)] + T[T_IND(i, j + 1, Ny)]));
-//         }
-//     }
-// }
-
-// void compute_v(problem_struct *problem){
-//     int i, j;
-//     int Nx = problem->Nx, Ny = problem->Ny;
-//     double h = problem->h;
-//     double dt = problem->dt;
-//     double *u_star = problem->u_star;
-//     double *v_star = problem->v_star;
-//     double *phi = problem->phi;
-//     for(i = 1; i < Nx - 1; i++){
-//         for(j = 1; j < Ny; j++){
-//             problem->u[U_IND(i, j, Ny)] = u_star[U_IND(i, j, Ny)] - dt/h * (phi[P_IND(i, j - 1, Ny)] - phi[P_IND(i - 1, j - 1, Ny)]);
-//         }
-//     }
-
-//     for(i = 1; i < Nx; i++){
-//         for(j = 1; j < Ny - 1; j++){
-//             // printf("%f\n", dt/h * (phi[P_IND(i - 1, j, Ny)] - phi[P_IND(i - 1, j - 1, Ny)]));
-//             problem->v[V_IND(i, j, Ny)] = v_star[V_IND(i, j, Ny)] - dt/h * (phi[P_IND(i - 1, j, Ny)] - phi[P_IND(i - 1, j - 1, Ny)]);
-//         }
-//     }
-// }
-
-// void compute_T(problem_struct *problem){
-//     int i, j;
-//     int Nx = problem->Nx, Ny = problem->Ny;
-//     double h = problem->h;
-//     double *T = problem->T;
-//     for(i = 1; i < Nx; i++){
-//         for(j = 1; j < Ny; j++){
-//             T[T_IND(i, j, Ny)] += problem->dt * (-0.5 * (3 * problem->H_n_T[T_IND(i, j, Ny)] - problem->H_n_1_T[T_IND(i, j, Ny)])
-//                                 + pow(problem->Gr, -0.5)/(problem->Pr * h*h) * (T[T_IND(i + 1, j, Ny)] + T[T_IND(i - 1, j, Ny)] + T[T_IND(i, j + 1, Ny)] + T[T_IND(i, j - 1, Ny)] - 4.0 * T[T_IND(i, j, Ny)]));
-//         }
-//     }
-// }
-
-// void compute_H_n(problem_struct *problem){
-//     int i, j;
-//     int Nx = problem->Nx, Ny = problem->Ny;
-//     double h = problem->h;
-//     double *u = problem->u;
-//     double *v = problem->v;
-//     double *T = problem->T;
-//     for(i = 1; i < Nx - 1; i++){
-//         for(j = 1; j < Ny; j++){
-//             problem->H_n_u[U_IND(i, j, Ny)] = 1/(4 * h) * ((u[U_IND(i, j, Ny)] + u[U_IND(i + 1, j, Ny)]) * (u[U_IND(i + 1, j, Ny)] - u[U_IND(i, j, Ny)])
-//                                                 + (u[U_IND(i, j, Ny)] + u[U_IND(i - 1, j, Ny)]) * (u[U_IND(i, j, Ny)] - u[U_IND(i - 1, j, Ny)])
-//                                                 + (v[V_IND(i - 1, j + 1, Ny)] + v[V_IND(i, j + 1, Ny)]) * (u[U_IND(i, j + 1, Ny)] - u[U_IND(i, j, Ny)])
-//                                                 + (v[V_IND(i, j, Ny)] + v[V_IND(i - 1, j, Ny)]) * (u[U_IND(i, j, Ny)] - u[U_IND(i - 1, j, Ny)]));
-//         }
-//     }
-
-//     for(i = 1; i < Nx; i++){
-//         for(j = 1; j < Ny - 1; j++){
-//             problem->H_n_v[V_IND(i, j, Ny)] = 1/(4 * h) * ((u[U_IND(i, j, Ny)] + u[U_IND(i, j - 1, Ny)]) * (v[V_IND(i, j, Ny)] - v[V_IND(i - 1, j, Ny)])
-//                                                 + (u[U_IND(i + 1, j, Ny)] + u[U_IND(i + 1, j - 1, Ny)]) * (v[V_IND(i + 1, j, Ny)] - v[V_IND(i, j, Ny)])
-//                                                 + (v[V_IND(i, j + 1, Ny)] + v[V_IND(i, j, Ny)]) * (v[V_IND(i, j + 1, Ny)] - v[V_IND(i, j, Ny)])
-//                                                 + (v[V_IND(i, j, Ny)] + v[V_IND(i, j - 1, Ny)]) * (v[V_IND(i, j, Ny)] - v[V_IND(i - 1, j, Ny)]));
-//         }
-//     }
-
-//     for(i = 1; i < Nx; i++){
-//         for(j = 1; j < Ny; j++){
-//             problem->H_n_T[T_IND(i, j, Ny)] = 1/(4 * h) * ((u[U_IND(i, j, Ny)] + u[U_IND(i - 1, j, Ny)]) * (T[T_IND(i + 1, j, Ny)] - T[T_IND(i - 1, j, Ny)])
-//                                                 + (v[V_IND(i, j, Ny)] + v[V_IND(i, j - 1, Ny)]) * (T[T_IND(i, j + 1, Ny)] - T[T_IND(i, j - 1, Ny)]));
-//         }
-//     }
-
-// }
-
-// void add_phi_P(problem_struct *problem){
-//     int i,j;
-//     int Nx = problem->Nx, Ny = problem->Ny;
-//     for(i = 0; i < Nx - 1; i++){
-//         for(j = 0; j < Ny - 1; j++){
-//             problem->P[P_IND(i, j, Ny)] += problem->phi[P_IND(i, j, Ny)];
-//         }
-//     }
-// }
-
 // void print_phi(double *phi, int Nx, int Ny){
 //     int i, j;
 //     printf("PHI\n");
@@ -365,30 +252,6 @@ void free_data_sim(data_sim *sim_data){
 //         }
 //         printf("\n");
 //     }
-// }
-
-// void copy_H_n(problem_struct *problem){
-//     memcpy(problem->H_n_1_u, problem->H_n_u, (problem->Nx) * (problem->Ny + 1) * sizeof(double));
-//     memcpy(problem->H_n_1_v, problem->H_n_v, (problem->Nx + 1) * (problem->Ny) * sizeof(double));
-//     memcpy(problem->H_n_1_T, problem->H_n_T, (problem->Nx + 1) * (problem->Ny + 1) * sizeof(double));
-// }
-
-// void iterate(problem_struct *problem){
-//     problem->t += problem->dt;
-//     problem->iter++;
-//     copy_H_n(problem);
-//     compute_BC(problem);
-//     compute_H_n(problem);
-//     V_to_file(problem, "0");
-//     compute_v_star(problem);
-//     V_star_to_file(problem);
-//     poisson_solver(problem->data, problem->phi, problem->u_star, problem->v_star, problem->h, problem->dt, problem->Nx, problem->Ny);
-//     // print_phi(problem->phi, problem->Nx, problem->Ny);
-//     compute_v(problem);
-//     V_to_file(problem, "1");
-//     add_phi_P(problem);
-//     compute_T(problem);
-//     T_to_file(problem);
 // }
 
 // void U_star(double *u_star, int Nx, int Ny){
@@ -448,3 +311,135 @@ void free_data_sim(data_sim *sim_data){
 //     free(data);
 // }
 
+
+void compute_BC(data_sim *data){
+    int i;
+    double **u = data->u;
+    double **T = data->T;
+    double **v = data->v;
+
+    // horizontal walls
+    for(i = 1; i < data->nxu - 1; i++){
+        u[i][0] = -1.0/5.0 * (u[i][3] - 5.0 * u[i][2] + 15.0 * u[i][1]);
+        u[i][data->nyu-1] = u[i][data->nyu-2];
+    }
+    for(i = 1; i < data->nxT - 1; i++){
+        T[i][0] = T[i][1] + data->h;
+        T[i][data->nyT-1] = T[i][data->nyT-2] * (L0/data->h - 0.5)/(L0/data->h + 0.5);
+    }
+
+    // vertical walls
+    for(i = 1; i < data->nyv - 1; i++){
+        v[0][i] = -1.0/5.0 * (v[3][i] - 5.0 * v[2][i] + 15.0 * v[1][i]);
+        v[data->nxv-1][i] = -1.0/5.0 * (v[data->nxv-4][i] - 5.0 * v[data->nxv-3][i] + 15.0 * v[data->nxv-2][i]);
+    }
+    for(i = 1; i < data->nyT - 1; i++){
+        T[0][i] = T[1][i];
+        T[data->nxT-1][i] = T[data->nxT-2][i];
+    }
+}
+
+void add_phi_P(data_sim *data){
+    int i,j;
+    for(i = 0; i < data->nxP; i++){
+        for(j = 0; j < data->nyP; j++){
+            data->P[i][j] += data->phi[i][j];
+        }
+    }
+}
+
+void compute_T(data_sim *data, double dt){
+    int i, j;
+    double **T = data->T;
+    for(i = 1; i < data->nxT - 1; i++){
+        for(j = 1; j < data->nyT - 1; j++){
+            T[i][j] += dt * (-0.5 * (3 * data->H_T[i][j] - data->H_1_T[i][j])
+                            + SQRT_GR * PR_M1 * (T[i+1][j] + T[i-1][j] + T[i][j+1] + T[i][j-1] - 4.0 * T[i][j])/(data->h * data->h));
+        }
+    }
+}
+
+void compute_v(data_sim *data, double dt){
+    int i, j;
+    double **u = data->u;
+    double **v = data->v;
+    double **u_star = data->u_star;
+    double **v_star = data->v_star;
+    double **phi = data->phi;
+    for(i = 1; i < data->nxu - 1; i++){
+        for(j = 1; j < data->nyu - 1; j++){
+            u[i][j] = u_star[i][j] - dt/data->h * (phi[i][j-1] - phi[i-1][j-1]);
+        }
+    }
+
+    for(i = 1; i < data->nxv - 1; i++){
+        for(j = 1; j < data->nyv - 1; j++){
+            v[i][j] = v_star[i][j] - dt/data->h * (phi[i-1][j] - phi[i-1][j-1]);
+        }
+    }
+}
+
+void compute_v_star(data_sim *data, double dt){
+    int i, j;
+    double **u = data->u;
+    double **v = data->v;
+    double **P = data->P;
+    double **T = data->T;
+    double **H_u = data->H_u;
+    double **H_v = data->H_v;
+    double **H_1_u = data->H_1_u;
+    double **H_1_v = data->H_1_v;
+    for(i = 1; i < data->nxu - 1; i++){
+        for(j = 1; j < data->nyu - 1; j++){
+            data->u_star[i][j] = u[i][j] + dt * (-0.5 * (3 * H_u[i][j] - H_1_u[i][j])
+                                            - 1.0/data->h * (P[i][j-1] - P[i-1][j-1])
+                                            + SQRT_GR * (u[i+1][j] + u[i-1][j] + u[i][j+1] + u[i][j-1] - 4.0 * u[i][j])/(data->h * data->h));
+        }
+    }
+
+    for(i = 1; i < data->nxv - 1; i++){
+        for(j = 1; j < data->nyv - 1; j++){
+            data->v_star[i][j] = v[i][j] + dt * (-0.5 * (3 * H_v[i][j] - H_1_v[i][j])
+                                            - 1.0/data->h * (P[i-1][j] - P[i-1][j-1])
+                                            + SQRT_GR * (v[i+1][j] + v[i-1][j] + v[i][j+1] + v[i][j-1] - 4.0 * v[i][j])/(data->h * data->h)
+                                            + 0.5 * (T[i][j] + T[i][j+1]));
+        }
+    }
+}
+
+void compute_H_n(data_sim *data){
+    int i, j;
+    double **u = data->u;
+    double **v = data->v;
+    double **T = data->T;
+    for(i = 1; i < data->nxu - 1; i++){
+        for(j = 1; j < data->nyu - 1; j++){
+            data->H_u[i][j] = 1/(4 * data->h) * ((u[i][j] + u[i+1][j]) * (u[i+1][j] - u[i][j])
+                                                + (u[i][j] + u[i-1][j]) * (u[i][j] - u[i-1][j])
+                                                + (v[i][j] + v[i+1][j]) * (u[i][j+1] - u[i][j])
+                                                + (v[i][j-1] + v[i+1][j-1]) * (u[i][j] - u[i][j-1]));
+        }
+    }
+
+    for(i = 1; i < data->nxv - 1; i++){
+        for(j = 1; j < data->nyv - 1; j++){
+            data->H_v[i][j] = 1/(4 * data->h) * ((u[i-1][j] + u[i-1][j+1]) * (v[i][j] - v[i-1][j])
+                                                + (u[i][j] + u[i][j+1]) * (v[i+1][j] - v[i][j])
+                                                + (v[i][j+1] + v[i][j]) * (v[i][j+1] - v[i][j])
+                                                + (v[i][j] + v[i][j-1]) * (v[i][j] - v[i-1][j]));
+        }
+    }
+
+    for(i = 1; i < data->nxT - 1; i++){
+        for(j = 1; j < data->nyT; j++){
+            data->H_T[i][j] = 1/(4 * data->h) * (u[i][j] * (T[i+1][j] - T[i][j]) + u[i-1][j] * (T[i][j] - T[i-1][j])
+                                                + v[i][j] * (T[i][j+1] - T[i][j]) + v[i][j-1] * (T[i][j] - T[i][j-1]));
+        }
+    }
+}
+
+void copy_H_n(data_sim *data){
+    memcpy(data->H_1_u[0], data->H_u[0], data->nxu * data->nyu * sizeof(double));
+    memcpy(data->H_1_v[0], data->H_v[0], data->nxv * data->nyv * sizeof(double));
+    memcpy(data->H_1_T[0], data->H_T[0], data->nxT * data->nyT * sizeof(double));
+}

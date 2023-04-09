@@ -4,8 +4,10 @@
 #include "poisson.h"
 
 # define GR 10000000000.0
+# define SQRT_GR 0.00001
 # define PR 4.0
-# define L0 = 0.001
+# define PR_M1 0.25
+# define L0 0.001
 
 typedef struct{
     int nx;

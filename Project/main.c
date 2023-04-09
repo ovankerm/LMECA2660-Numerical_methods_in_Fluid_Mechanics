@@ -2,23 +2,18 @@
 
 int main(int argc, char *argv[]){
 
-    // PetscInitialize(&argc, &argv, 0, 0);
+    PetscInitialize(&argc, &argv, 0, 0);
 
     // Nx == 2^n + 1
-    problem_struct *problem = create_problem(17);
+    problem_struct *problem = create_problem(5);
 
-    printf("PUTE\n");
+    int i, j;
 
-    free(problem);
-
-    // int i, j;
-
-    // for(i = 0; i < 10; i++){
-    //     for(j = 0; j < 10; j++){
-    //         iterate(problem);
-    //     }
-    //     problem_to_file(problem);
-    // }
+    j = 0;
+    for(i = 0; i < 10; i++){
+        iterate(problem);
+        problem_to_file(problem);
+    }
 
     // for(i = 0; i < 10; i++){
     //     for(j = 0; j < 10; j++){
@@ -27,9 +22,9 @@ int main(int argc, char *argv[]){
     //     }
     // }
 
-    // free_problem(problem);
+    free_problem(problem);
 
     // test_poisson();
 
-    // PetscFinalize();
+    PetscFinalize();
 }

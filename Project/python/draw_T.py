@@ -2,18 +2,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 
-class MidpointNormalize(mpl.colors.Normalize):
-    def __init__(self, vmin, vmax, midpoint=0, clip=False):
-        self.midpoint = midpoint
-        mpl.colors.Normalize.__init__(self, vmin, vmax, clip)
-
-    def __call__(self, value, clip=None):
-        normalized_min = max(0, 1 / 2 * (1 - abs((self.midpoint - self.vmin) / (self.midpoint - self.vmax))))
-        normalized_max = min(1, 1 / 2 * (1 + abs((self.vmax - self.midpoint) / (self.midpoint - self.vmin))))
-        normalized_mid = 0.5
-        x, y = [self.vmin, self.midpoint, self.vmax], [normalized_min, normalized_mid, normalized_max]
-        return np.ma.masked_array(np.interp(value, x, y))
-
 for i in range(1, 11):
     t = 1 * (11-i)
 
@@ -37,7 +25,7 @@ for i in range(1, 11):
     ax[0].set_title("T")
     plt.colorbar(cs_T, ax=ax[0])
 
-    with open("Project/output/V_star-%d.txt"%t, 'r') as f:
+    with open("Project/output/V-%d.txt"%t, 'r') as f:
         l = f.readline().split()
         Nx = int(l[2])
         Ny = int(l[5])
@@ -50,7 +38,7 @@ for i in range(1, 11):
     X_U, Y_U = np.meshgrid(np.linspace(h, 2/3-h, endpoint=True, num=(Nx-1)), np.linspace(0, 1, endpoint=True, num=(Ny)))
 
     cs_U = ax[1].contourf(X_U, Y_U, U, cmap='bwr', levels=100)
-    ax[1].set_title("V_star")
+    ax[1].set_title("V")
     plt.colorbar(cs_U, ax=ax[1])
 
     # with open("Project/output/0_V-%d.txt"%t, 'r') as f:
@@ -69,7 +57,7 @@ for i in range(1, 11):
     # ax[1].set_title("0_V")
     # plt.colorbar(cs_U, ax=ax[1])
 
-    with open("Project/output/1_V-%d.txt"%t, 'r') as f:
+    with open("Project/output/U-%d.txt"%t, 'r') as f:
         l = f.readline().split()
         Nx = int(l[2])
         Ny = int(l[5])
@@ -82,7 +70,7 @@ for i in range(1, 11):
     X_V, Y_V = np.meshgrid(np.linspace(h, 2/3 - h, endpoint=True, num=(Nx-1)), np.linspace(0, 1, endpoint=True, num=Ny))
 
     cs_V = ax[2].contourf(X_V, Y_V, V, cmap='bwr', levels=100)
-    ax[2].set_title("1_V")
+    ax[2].set_title("U")
     plt.colorbar(cs_V, ax=ax[2])
 
 

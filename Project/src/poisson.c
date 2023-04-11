@@ -10,15 +10,15 @@ int PHI_IND(int i, int j, int Ny){
 /*Modification to do :*/
 /*  OKKKK  -Impose zero mass flow here by changing value of U_star*/
 /*  OKKKK  -Fill vector rhs*/
-void computeRHS(double *rhs, PetscInt rowStart, PetscInt rowEnd, int nx, int ny, double **u_star, double **v_star, double dt, double h)
+void computeRHS(double *rhs, PetscInt rowStart, PetscInt rowEnd, int nx, int ny, double **u_star, double **v_star, double dt)
 {
     int i, j;
-    for(i = 1; i < nx - 1; i++){
+    for(i = 1; i < nx - 2; i++){
         v_star[i][0] = 0.0;
         v_star[i][ny - 1] = 0.0;
     }
     
-    for(i = 1; i < ny - 1; i++){
+    for(i = 1; i < ny - 2; i++){
         u_star[0][i] = 0.0;
         u_star[nx - 1][i] = 0.0;
     }
@@ -27,12 +27,11 @@ void computeRHS(double *rhs, PetscInt rowStart, PetscInt rowEnd, int nx, int ny,
     for(r=rowStart; r<rowEnd ; r++){
         i = (int) r/(ny - 1);
         j = r%(ny - 1);
-		rhs[r] = h/dt * (u_star[i+1][j+1] - u_star[i][j+1] + v_star[i+1][j] - v_star[i+1][j]); /*WRITE HERE (nabla dot u_star)/dt at each mesh point r*/
+        // printf("i : %d, j : %d, %e\n", i, j, (u_star[i+1][j+1] - u_star[i][j+1] + v_star[i+1][j+1] - v_star[i+1][j]));
+		rhs[r] = 1/dt * (u_star[i+1][j+1] - u_star[i][j+1] + v_star[i+1][j+1] - v_star[i+1][j]); /*WRITE HERE (nabla dot u_star)/dt at each mesh point r*/
         /*Do not forget that the solution for the Poisson equation is defined within a constant.
         One point from Phi must then be set to an abritrary constant.*/
     }
-
-
 }
 
 /*To call at each time step after computation of U_star. This function solves the poisson equation*/
@@ -41,7 +40,7 @@ void computeRHS(double *rhs, PetscInt rowStart, PetscInt rowEnd, int nx, int ny,
 /*Modification to do :*/
 /*   OKKKKK - Change the call to computeRHS as you have to modify its prototype too*/
 /*   OKKKKK - Copy solution of the equation into your vector PHI*/
-void poisson_solver(Poisson_data *data, int nx, int ny, double **u_star, double **v_star, double dt, double h, double *phi)
+void poisson_solver(Poisson_data *data, int nx, int ny, double **u_star, double **v_star, double dt, double *phi)
 {
 
     /* Solve the linear system Ax = b for a 2-D poisson equation on a structured grid */
@@ -56,7 +55,7 @@ void poisson_solver(Poisson_data *data, int nx, int ny, double **u_star, double 
     /* Fill the right-hand-side vector : b */
     VecGetOwnershipRange(b, &rowStart, &rowEnd);
     VecGetArray(b, &rhs);
-    computeRHS(rhs, rowStart, rowEnd, nx, ny, u_star, v_star, dt, h); /*MODIFY THE PROTOTYPE HERE*/
+    computeRHS(rhs, rowStart, rowEnd, nx, ny, u_star, v_star, dt); /*MODIFY THE PROTOTYPE HERE*/
     VecRestoreArray(b, &rhs);
 
     // VecView(b, PETSC_VIEWER_STDOUT_WORLD);
@@ -65,7 +64,7 @@ void poisson_solver(Poisson_data *data, int nx, int ny, double **u_star, double 
     /*Solve the linear system of equations */
     KSPSolve(sles, b, x);
     KSPGetIterationNumber(sles, &its);
-    PetscPrintf(PETSC_COMM_WORLD, "Solution to Poisson eqn in %d iterations \n", its);
+    // PetscPrintf(PETSC_COMM_WORLD, "Solution to Poisson eqn in %d iterations \n", its);
 
     VecGetArray(x, &sol);
 
@@ -90,69 +89,67 @@ Compute the discretized laplacian of phi
 we need to set a value of phi, ex, phi[0] = 0
 
 */
-void computeLaplacianMatrix(Mat A, int rowStart, int rowEnd, int Nx, int Ny)
+void computeLaplacianMatrix(Mat A, int rowStart, int rowEnd, int Nx, int Ny, double h)
 {
     int i,j;
     int r;
     for(j = 1; j < Ny - 2; j++){
         r = rowStart + PHI_IND(0, j, Ny);
-        MatSetValue(A, r, r , -3.0, INSERT_VALUES);
-        MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
+        MatSetValue(A, r, r , -3.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r+1 , 1.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r-1 , 1.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r+(Ny-1) , 1.0/h, INSERT_VALUES);
         r = rowStart + PHI_IND(Nx-2, j, Ny);
-        MatSetValue(A, r, r , -3.0, INSERT_VALUES);
-        MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+        MatSetValue(A, r, r , -3.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r+1 , 1.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r-1 , 1.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r-(Ny-1), 1.0/h, INSERT_VALUES);
     }
     for(i = 1; i < Nx - 2; i++){
         r = rowStart + PHI_IND(i, 0, Ny);
-        MatSetValue(A, r, r , -3.0, INSERT_VALUES);
-        MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+        MatSetValue(A, r, r , -3.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r+1 , 1.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r+(Ny-1) , 1.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r-(Ny-1) , 1.0/h, INSERT_VALUES);
         r = rowStart + PHI_IND(i, Ny - 2, Ny);
-        MatSetValue(A, r, r , -3.0, INSERT_VALUES);
-        MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
-        MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+        MatSetValue(A, r, r , -3.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r-1 , 1.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r+(Ny-1) , 1.0/h, INSERT_VALUES);
+        MatSetValue(A, r, r-(Ny-1) , 1.0/h, INSERT_VALUES);
         for(j = 1; j < Ny - 2; j++){
             r = rowStart + PHI_IND(i, j, Ny);
-            MatSetValue(A, r, r , -4.0, INSERT_VALUES);
-            MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-            MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-            MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
-            MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+            MatSetValue(A, r, r , -4.0/h, INSERT_VALUES);
+            MatSetValue(A, r, r+1 , 1.0/h, INSERT_VALUES);
+            MatSetValue(A, r, r-1 , 1.0/h, INSERT_VALUES);
+            MatSetValue(A, r, r+(Ny-1) , 1.0/h, INSERT_VALUES);
+            MatSetValue(A, r, r-(Ny-1) , 1.0/h, INSERT_VALUES);
         }
     }
 
     r = rowStart + PHI_IND(0, 0, Ny);
-    MatSetValue(A, r, r , -2.0, INSERT_VALUES);
-    MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-    MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
+    MatSetValue(A, r, r , -2.0/h, INSERT_VALUES);
+    MatSetValue(A, r, r+1 , 1.0/h, INSERT_VALUES);
+    MatSetValue(A, r, r+(Ny-1) , 1.0/h, INSERT_VALUES);
 
     r = rowStart + PHI_IND(0, Ny - 2, Ny);
-    MatSetValue(A, r, r , -2.0, INSERT_VALUES);
-    MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-    MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
+    MatSetValue(A, r, r , -2.0/h, INSERT_VALUES);
+    MatSetValue(A, r, r-1 , 1.0/h, INSERT_VALUES);
+    MatSetValue(A, r, r+(Ny-1) , 1.0/h, INSERT_VALUES);
 
     r = rowStart + PHI_IND(Nx - 2, 0, Ny);
-    MatSetValue(A, r, r , -2.0, INSERT_VALUES);
-    MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-    MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+    MatSetValue(A, r, r , -2.0/h, INSERT_VALUES);
+    MatSetValue(A, r, r+1 , 1.0/h, INSERT_VALUES);
+    MatSetValue(A, r, r-(Ny-1) , 1.0/h, INSERT_VALUES);
 
     r = rowStart + PHI_IND(Nx - 2, Ny-2, Ny);
-    MatSetValue(A, r, r , -2.0, INSERT_VALUES);
-    MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-    MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
+    MatSetValue(A, r, r , -2.0/h, INSERT_VALUES);
+    MatSetValue(A, r, r-1 , 1.0/h, INSERT_VALUES);
+    MatSetValue(A, r, r-(Ny-1) , 1.0/h, INSERT_VALUES);
 
-    r = rowStart + PHI_IND((Nx - 2)/2, (Ny-2)/2, Ny);
-    printf("%d\n", r);
-    MatSetValue(A, r, r, 1.0, INSERT_VALUES);
+    r = rowStart + PHI_IND(0, (Ny-2)/2, Ny);
+    MatSetValue(A, r, r, 1.0/h, INSERT_VALUES);
     MatSetValue(A, r, r-1, 0.0, INSERT_VALUES);
     MatSetValue(A, r, r+1, 0.0, INSERT_VALUES);
-    MatSetValue(A, r, r-(Ny-1), 0.0, INSERT_VALUES);
     MatSetValue(A, r, r+(Ny-1), 0.0, INSERT_VALUES);
 
 
@@ -188,7 +185,7 @@ void computeLaplacianMatrix(Mat A, int rowStart, int rowEnd, int Nx, int Ny)
 /*Modification to do in this function :*/
 /*  OKKKKK -Specify the number of unknows*/
 /*  OKKKKK -Specify the number of non-zero diagonals in the sparse matrix*/
-PetscErrorCode initialize_poisson_solver(Poisson_data* data, int Nx, int Ny)
+PetscErrorCode initialize_poisson_solver(Poisson_data* data, int Nx, int Ny, double h)
 {
     PetscInt rowStart; /*rowStart = 0*/
     PetscInt rowEnd; /*rowEnd = the number of unknows*/
@@ -210,10 +207,10 @@ PetscErrorCode initialize_poisson_solver(Poisson_data* data, int Nx, int Ny)
     MatCreate(PETSC_COMM_WORLD, &(data->A));
     MatSetSizes(data->A, PETSC_DECIDE, PETSC_DECIDE, nphi , nphi);
     MatSetType(data->A, MATAIJ);
-    MatSeqAIJSetPreallocation(data->A,2 * (Ny - 1) + 1, NULL); // /*SET HERE THE NUMBER OF NON-ZERO DIAGONALS*/
+    MatSeqAIJSetPreallocation(data->A,20, NULL); // /*SET HERE THE NUMBER OF NON-ZERO DIAGONALS*/
     MatGetOwnershipRange(data->A, &rowStart, &rowEnd);
 
-    computeLaplacianMatrix(data->A, rowStart, rowEnd, Nx, Ny);
+    computeLaplacianMatrix(data->A, rowStart, rowEnd, Nx, Ny, h);
     ierr = MatAssemblyBegin(data->A, MAT_FINAL_ASSEMBLY);
     CHKERRQ(ierr);
     ierr = MatAssemblyEnd(data->A, MAT_FINAL_ASSEMBLY);
@@ -234,7 +231,7 @@ PetscErrorCode initialize_poisson_solver(Poisson_data* data, int Nx, int Ny)
     KSPSetUseFischerGuess(data->sles,1,4);
     KSPGMRESSetPreAllocateVectors(data->sles);
 
-    PetscPrintf(PETSC_COMM_WORLD, "Assembly of Mattrix and Vectors is done \n");
+    // PetscPrintf(PETSC_COMM_WORLD, "Assembly of Mattrix and Vectors is done \n");
 
     return ierr;
 }

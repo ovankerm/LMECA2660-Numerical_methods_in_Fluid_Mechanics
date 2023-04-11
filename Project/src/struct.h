@@ -43,6 +43,7 @@ typedef struct{
     int nyT;
     double *T_data;
     double **T;
+    double **T_1;
     double **H_T;
     double **H_1_T;
 } data_sim;

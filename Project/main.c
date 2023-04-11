@@ -5,14 +5,14 @@ int main(int argc, char *argv[]){
     PetscInitialize(&argc, &argv, 0, 0);
 
     // Nx == 2^n + 1
-    problem_struct *problem = create_problem(5);
+    problem_struct *problem = create_problem(9);
 
     int i, j;
 
     j = 0;
-    for(i = 0; i < 10; i++){
+    for(i = 0; i < 37; i++){
         iterate(problem);
-        problem_to_file(problem);
+        // problem_to_file(problem);
     }
 
     // for(i = 0; i < 10; i++){

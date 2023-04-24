@@ -4,10 +4,12 @@
 #include "poisson.h"
 
 # define GR 10000000000.0
-# define SQRT_GR 0.00001
+# define SQRT_GR 100000.0
 # define PR 4.0
 # define PR_M1 0.25
 # define L0 0.001
+# define DT_DTAU 1000
+# define OMEGA_S 0.1
 
 typedef struct{
     int nx;
@@ -22,6 +24,13 @@ typedef struct{
     double **u_star;
     double **H_u;
     double **H_1_u;
+    int nxu_low;
+    int nxu_high;
+    int nyu_low;
+    int nyu_high;
+    int n_u_points;
+    int *u_i;
+    int *u_j;
 
     int nxv;
     int nyv;
@@ -30,6 +39,13 @@ typedef struct{
     double **v_star;
     double **H_v;
     double **H_1_v;
+    int nxv_low;
+    int nxv_high;
+    int nyv_low;
+    int nyv_high;
+    int n_v_points;
+    int *v_i;
+    int *v_j;
 
     int nxP;
     int nyP;
@@ -46,6 +62,13 @@ typedef struct{
     double **T_1;
     double **H_T;
     double **H_1_T;
+    int nxT_low;
+    int nxT_high;
+    int nyT_low;
+    int nyT_high;
+    int n_T_points;
+    int *T_i;
+    int *T_j;
 } data_sim;
 
 typedef struct{
@@ -56,6 +79,8 @@ typedef struct{
     int iter;
 
     Poisson_data *poiss_data;
+
+    FILE *diag_file;
 } problem_struct;
 
 # endif

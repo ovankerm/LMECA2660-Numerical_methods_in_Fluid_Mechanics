@@ -29,4 +29,4 @@ clean :
 
 #Delete of results
 clean_files :
-	rm -vf output/*.txt output/P-* output/U-* output/V-* output/Reh-* output/Vtx-* output/Rehw-* output/Div-*
+	rm -vf output/*.txt output/P-* output/U-* output/V-* output/Reh-* output/Vtx-* output/Rehw-* output/Div-* output/w-*

@@ -13,15 +13,15 @@ int PHI_IND(int i, int j, int Ny){
 void computeRHS(double *rhs, PetscInt rowStart, PetscInt rowEnd, int nx, int ny, double **u_star, double **v_star, double dt)
 {
     int i, j;
-    for(i = 1; i < nx - 2; i++){
-        v_star[i][0] = 0.0;
-        v_star[i][ny - 1] = 0.0;
-    }
+    // for(i = 1; i < nx - 2; i++){
+    //     v_star[i][0] = 0.0;
+    //     v_star[i][ny - 1] = 0.0;
+    // }
     
-    for(i = 1; i < ny - 2; i++){
-        u_star[0][i] = 0.0;
-        u_star[nx - 1][i] = 0.0;
-    }
+    // for(i = 1; i < ny - 2; i++){
+    //     u_star[0][i] = 0.0;
+    //     u_star[nx - 1][i] = 0.0;
+    // }
 
     int r = rowStart;
     for(r=rowStart; r<rowEnd ; r++){
@@ -32,6 +32,7 @@ void computeRHS(double *rhs, PetscInt rowStart, PetscInt rowEnd, int nx, int ny,
         /*Do not forget that the solution for the Poisson equation is defined within a constant.
         One point from Phi must then be set to an abritrary constant.*/
     }
+    rhs[(nx - 1) * (ny - 1) - 1] = 0.0;
 }
 
 /*To call at each time step after computation of U_star. This function solves the poisson equation*/
@@ -146,11 +147,10 @@ void computeLaplacianMatrix(Mat A, int rowStart, int rowEnd, int Nx, int Ny, dou
     MatSetValue(A, r, r-1 , 1.0/h, INSERT_VALUES);
     MatSetValue(A, r, r-(Ny-1) , 1.0/h, INSERT_VALUES);
 
-    r = rowStart + PHI_IND(0, (Ny-2)/2, Ny);
+    r = rowStart + (Nx - 1) * (Ny - 1) - 1;
     MatSetValue(A, r, r, 1.0/h, INSERT_VALUES);
     MatSetValue(A, r, r-1, 0.0, INSERT_VALUES);
-    MatSetValue(A, r, r+1, 0.0, INSERT_VALUES);
-    MatSetValue(A, r, r+(Ny-1), 0.0, INSERT_VALUES);
+    MatSetValue(A, r, r-(Ny-1), 0.0, INSERT_VALUES);
 
 
     // int r;
@@ -207,7 +207,7 @@ PetscErrorCode initialize_poisson_solver(Poisson_data* data, int Nx, int Ny, dou
     MatCreate(PETSC_COMM_WORLD, &(data->A));
     MatSetSizes(data->A, PETSC_DECIDE, PETSC_DECIDE, nphi , nphi);
     MatSetType(data->A, MATAIJ);
-    MatSeqAIJSetPreallocation(data->A,20, NULL); // /*SET HERE THE NUMBER OF NON-ZERO DIAGONALS*/
+    MatSeqAIJSetPreallocation(data->A,5, NULL); // /*SET HERE THE NUMBER OF NON-ZERO DIAGONALS*/
     MatGetOwnershipRange(data->A, &rowStart, &rowEnd);
 
     computeLaplacianMatrix(data->A, rowStart, rowEnd, Nx, Ny, h);

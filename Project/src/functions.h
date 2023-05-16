@@ -19,13 +19,8 @@ void free_data_sim(data_sim *sim_data);
 void problem_to_file(problem_struct *problem);
 void T_to_file(problem_struct *problem);
 void U_to_file(problem_struct *problem);
-void V_to_file(problem_struct *problem);
-void P_to_file(problem_struct *problem);
-void V_star_to_file(problem_struct *problem);
-void phi_to_file(problem_struct *problem);
-void H_to_file(problem_struct *problem);
-void H_T_to_file(problem_struct *problem);
 void omega_to_file(problem_struct *problem);
+void v_to_file(problem_struct *problem);
 
 void iterate(problem_struct *problem);
 
@@ -39,6 +34,10 @@ void copy_H_n(data_sim *data);
 
 int in_mixer(double x, double y, double t, double *us, double *vs);
 double compute_Ts(data_sim *data);
+void compute_Rehw(problem_struct *problem);
+void compute_Reh(problem_struct *problem);
+void compute_diagnostics(problem_struct *problem);
+double compute_qe(data_sim *data);
 double compute_Tavg(data_sim *data);
 double compute_sigT(data_sim *data, double Tavg);
 

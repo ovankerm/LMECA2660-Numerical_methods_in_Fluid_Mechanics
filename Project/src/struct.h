@@ -78,6 +78,9 @@ typedef struct{
     double dt;
     int iter;
 
+    double Reh;
+    double Rehw;
+
     Poisson_data *poiss_data;
 
     FILE *diag_file;

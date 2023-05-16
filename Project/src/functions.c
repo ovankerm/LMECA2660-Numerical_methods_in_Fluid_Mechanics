@@ -32,10 +32,13 @@ problem_struct *create_problem(int nx, int mixer){
     problem->poiss_data = malloc(sizeof(Poisson_data));
     initialize_poisson_solver(problem->poiss_data, problem->sim_data->nx, problem->sim_data->ny, problem->sim_data->h);
 
-    problem->dt = fmin(0.2 * problem->sim_data->h * problem->sim_data->h * SQRT_GR, 0.7 * problem->sim_data->h/4);
+    problem->dt = fmin(0.5 * problem->sim_data->h * problem->sim_data->h * SQRT_GR, 0.5 * problem->sim_data->h/0.25);
     problem->t = 0.0;
 
     problem->iter = 0;
+
+    problem->Reh = 0.0;
+    problem->Rehw = 0.0;
 
     FILE* file = fopen("output/diagnostics.txt","w");
     problem->diag_file = file;
@@ -50,7 +53,7 @@ data_sim *init_data(int nx, int mixer){
     sim_data->nx = nx;
     sim_data->h = 2.0/(3.0 * (nx-1));
 
-    int ny = 1.0/sim_data->h + 1;
+    int ny = 1.0/sim_data->h + 1.0;
     sim_data->ny = ny;
 
     sim_data->nxu = nx;
@@ -209,7 +212,6 @@ void get_indices(data_sim *data){
 void iterate(problem_struct *problem){
     problem->t += problem->dt;
     problem->iter++;
-    printf("------ %d ------\n", problem->iter);
     data_sim *data = problem->sim_data;
     copy_H_n(data);
     compute_BC(data);
@@ -219,15 +221,14 @@ void iterate(problem_struct *problem){
     compute_v(data, problem->dt);
     add_phi_P(data);
     compute_T(data, problem->dt, problem->t);
-    double Tavg = compute_Tavg(data);
-    double sigT = compute_sigT(data, Tavg);
-    fprintf(problem->diag_file, "iter : %d Tavg : %e sigT : %e\n", problem->iter, Tavg, sigT);
 }
 
 void problem_to_file(problem_struct *problem){
+    printf("------ %d ------\n", problem->iter);
     T_to_file(problem);
     U_to_file(problem);
     omega_to_file(problem);
+    v_to_file(problem);
 }
 
 void T_to_file(problem_struct *problem){
@@ -238,57 +239,25 @@ void T_to_file(problem_struct *problem){
     data_sim *data = problem->sim_data;
     FILE* file = fopen(filename,"w");
     fprintf(file, "Nx : %d Ny : %d h : %e t : %e\n", data->nx, data->ny, data->h, problem->t);
-    for(i = 1; i < data->nx; i++){
-        for(j = 1; j < data->ny; j++){
-            fprintf(file, "i : %d j : %d T : %e\n", i, j, data->T[i][j]);
+    for(i = 1; i < data->nxT-1; i++){
+        for(j = 1; j < data->nyT-1; j++){
+            fprintf(file, "%d %d %e\n", i, j, data->T[i][j]);
         }
     }
     fclose(file);
 }
 
-void H_T_to_file(problem_struct *problem){
+void v_to_file(problem_struct *problem){
     int i, j;
-    const char *basename = "output/H_T-%d.txt";
+    const char *basename = "output/v-%d.txt";
     char filename[256];
     sprintf(filename,basename,problem->iter);
     data_sim *data = problem->sim_data;
     FILE* file = fopen(filename,"w");
-    fprintf(file, "Nx : %d Ny : %d h : %e\n", data->nx, data->ny, data->h);
-    for(i = 1; i < data->nx; i++){
-        for(j = 1; j < data->ny; j++){
-            fprintf(file, "i : %d j : %d T : %e\n", i, j, data->H_T[i][j]);
-        }
-    }
-    fclose(file);
-}
-
-void P_to_file(problem_struct *problem){
-    int i, j;
-    const char *basename = "output/P-%d.txt";
-    char filename[256];
-    sprintf(filename,basename,problem->iter);
-    data_sim *data = problem->sim_data;
-    FILE* file = fopen(filename,"w");
-    fprintf(file, "Nx : %d Ny : %d h : %e\n", data->nx, data->ny, data->h);
-    for(i = 0; i < data->nxP; i++){
-        for(j = 0; j < data->nyP; j++){
-            fprintf(file, "i : %d j : %d P : %e\n", i, j, data->P[i][j]);
-        }
-    }
-    fclose(file);
-}
-
-void phi_to_file(problem_struct *problem){
-    int i, j;
-    const char *basename = "output/phi-%d.txt";
-    char filename[256];
-    sprintf(filename,basename,problem->iter);
-    data_sim *data = problem->sim_data;
-    FILE* file = fopen(filename,"w");
-    fprintf(file, "Nx : %d Ny : %d h : %e\n", data->nx, data->ny, data->h);
-    for(i = 0; i < data->nxP; i++){
-        for(j = 0; j < data->nyP; j++){
-            fprintf(file, "i : %d j : %d P : %e\n", i, j, data->phi[i][j]);
+    fprintf(file, "Nx : %d Ny : %d h : %e t : %e\n", data->nx, data->ny, data->h, problem->t);
+    for(i = 0; i < data->nxv; i++){
+        for(j = 0; j < data->nyv; j++){
+            fprintf(file, "%d %d %e\n", i, j, data->v[i][j]);
         }
     }
     fclose(file);
@@ -304,56 +273,8 @@ void U_to_file(problem_struct *problem){
     fprintf(file, "Nx : %d Ny : %d h : %e t : %e\n", data->nx, data->ny, data->h, problem->t);
     for(i = 0; i < data->nx; i++){
         for(j = 0; j < data->ny; j++){
-            fprintf(file, "i : %d j : %d U : %e\n", i, j, sqrt((data->v[i+1][j] + data->v[i][j])/2 * (data->v[i+1][j] + data->v[i][j])/2
+            fprintf(file, "%d %d %e\n", i, j, sqrt((data->v[i+1][j] + data->v[i][j])/2 * (data->v[i+1][j] + data->v[i][j])/2
                                                                 + (data->u[i][j+1] + data->u[i][j])/2 * (data->u[i][j+1] + data->u[i][j])/2));
-        }
-    }
-    fclose(file);
-}
-
-void V_to_file(problem_struct *problem){
-    int i, j;
-    const char *basename = "output/V-%d.txt";
-    char filename[256];
-    sprintf(filename,basename,problem->iter);
-    data_sim *data = problem->sim_data;
-    FILE* file = fopen(filename,"w");
-    fprintf(file, "Nx : %d Ny : %d h : %e\n", data->nx, data->ny, data->h);
-    for(i = 1; i < data->nx; i++){
-        for(j = 0; j < data->ny; j++){
-            fprintf(file, "i : %d j : %d V : %e\n", i, j, data->v[i][j]);
-        }
-    }
-    fclose(file);
-}
-
-void V_star_to_file(problem_struct *problem){
-    int i, j;
-    const char *basename = "output/V_star-%d.txt";
-    char filename[256];
-    sprintf(filename,basename,problem->iter);
-    data_sim *data = problem->sim_data;
-    FILE* file = fopen(filename,"w");
-    fprintf(file, "Nx : %d Ny : %d h : %e\n", data->nx, data->ny, data->h);
-    for(i = 1; i < data->nx; i++){
-        for(j = 0; j < data->ny; j++){
-            fprintf(file, "i : %d j : %d V_star : %e\n", i, j, data->v_star[i][j]);
-        }
-    }
-    fclose(file);
-}
-
-void H_to_file(problem_struct *problem){
-    int i, j;
-    const char *basename = "output/H-%d.txt";
-    char filename[256];
-    sprintf(filename,basename,problem->iter);
-    data_sim *data = problem->sim_data;
-    FILE* file = fopen(filename,"w");
-    fprintf(file, "Nx : %d Ny : %d h : %e\n", data->nx, data->ny, data->h);
-    for(i = 1; i < data->nx; i++){
-        for(j = 0; j < data->ny; j++){
-            fprintf(file, "i : %d j : %d V_star : %e\n", i, j, data->H_v[i][j]);
         }
     }
     fclose(file);
@@ -369,10 +290,36 @@ void omega_to_file(problem_struct *problem){
     fprintf(file, "Nx : %d Ny : %d h : %e t : %e\n", data->nx, data->ny, data->h, problem->t);
     for(i = 0; i < data->nx; i++){
         for(j = 0; j < data->ny; j++){
-            fprintf(file, "i : %d j : %d omega : %e\n", i, j, 1/data->h * (data->v[i+1][j] - data->v[i][j] - data->u[i][j+1] + data->u[i][j]));
+            fprintf(file, "%d %d %e\n", i, j, 1/data->h * (data->v[i+1][j] - data->v[i][j] - data->u[i][j+1] + data->u[i][j]));
         }
     }
     fclose(file);
+}
+
+void compute_Rehw(problem_struct *problem){
+    double Rehw_max = 0, Rehw;
+    int i,j;
+    data_sim *data = problem->sim_data;
+    for(i = 0; i < data->nx; i++){
+        for(j = 0; j < data->ny; j++){
+            Rehw = data->h * fabs(data->v[i+1][j] - data->v[i][j] - data->u[i][j+1] + data->u[i][j]) * SQRT_GR;
+            Rehw_max = fmax(Rehw, Rehw_max);
+        }
+    }
+    problem->Rehw = Rehw_max;
+}
+
+void compute_Reh(problem_struct *problem){
+    double Reh_max = 0, Reh;
+    int i,j;
+    data_sim *data = problem->sim_data;
+    for(i = 0; i < data->nx; i++){
+        for(j = 0; j < data->ny; j++){
+            Reh = data->h * (fabs((data->v[i+1][j] + data->v[i][j])/2) + fabs((data->u[i][j+1] + data->u[i][j])/2)) * SQRT_GR;
+            Reh_max = fmax(Reh, Reh_max);
+        }
+    }
+    problem->Reh = Reh_max;
 }
 
 
@@ -387,7 +334,7 @@ void compute_BC(data_sim *data){
         u[i][0] = -0.2 * (u[i][3] - 5.0 * u[i][2] + 15.0 * u[i][1]);
         u[i][data->nyu-1] = u[i][data->nyu-2];
     }
-    for(i = 0; i < data->nxT; i++){
+    for(i = 1; i < data->nxT - 1; i++){
         T[i][0] = T[i][1] + data->h;
         T[i][data->nyT-1] = T[i][data->nyT-2] * (L0/data->h - 0.5)/(L0/data->h + 0.5);
     }
@@ -424,7 +371,7 @@ void compute_T(data_sim *data, double dt, double t){
     }
     for(i = 1; i < data->nxT - 1; i++){
         for(j = 1; j < data->nyT - 1; j++){
-            T[i][j] += dt * (-0.5 * (3 * data->H_T[i][j] - data->H_1_T[i][j])
+            T[i][j] += dt * (-0.5 * (3.0 * data->H_T[i][j] - data->H_1_T[i][j])
                             + PR_M1/SQRT_GR * (T_1[i+1][j] + T_1[i-1][j] + T_1[i][j+1] + T_1[i][j-1] - 4.0 * T_1[i][j])/(data->h * data->h));
         }
     }
@@ -433,7 +380,7 @@ void compute_T(data_sim *data, double dt, double t){
 
     for(i = 0; i < data->n_T_points; i++){
         if(in_mixer(T_x(data->T_i[i], data->h), T_y(data->T_j[i], data->h), t, &trash, &trash)){
-            data->T[data->T_i[i]][data->T_j[i]] /= (1 + DT_DTAU);
+            data->T[data->T_i[i]][data->T_j[i]] /= (1.0 + DT_DTAU);
             data->T[data->T_i[i]][data->T_j[i]] += Ts;
         }
     }
@@ -472,31 +419,31 @@ void compute_v_star(data_sim *data, double dt, double t){
     double **H_1_v = data->H_1_v;
     for(i = 1; i < data->nxu - 1; i++){
         for(j = 1; j < data->nyu - 1; j++){
-            data->u_star[i][j] = u[i][j] + dt * (-0.5 * (3 * H_u[i][j] - H_1_u[i][j])
+            data->u_star[i][j] = u[i][j] + dt * (-0.5 * (3.0 * H_u[i][j] - H_1_u[i][j])
                                             - 1.0/data->h * (P[i][j-1] - P[i-1][j-1])
-                                            + 1/SQRT_GR * (u[i+1][j] + u[i-1][j] + u[i][j+1] + u[i][j-1] - 4.0 * u[i][j])/(data->h * data->h));
+                                            + 1.0/SQRT_GR * (u[i+1][j] + u[i-1][j] + u[i][j+1] + u[i][j-1] - 4.0 * u[i][j])/(data->h * data->h));
         }
     }
 
     for(i = 0; i < data->n_u_points; i++){
         if(in_mixer(u_x(data->u_i[i], data->h), u_y(data->u_j[i], data->h), t, &us, &vs)){
-            data->u_star[data->u_i[i]][data->u_j[i]] /= (1 + DT_DTAU);
+            data->u_star[data->u_i[i]][data->u_j[i]] /= (1.0 + DT_DTAU);
             data->u_star[data->u_i[i]][data->u_j[i]] += us;
         }
     }
 
     for(i = 1; i < data->nxv - 1; i++){
         for(j = 1; j < data->nyv - 1; j++){
-            data->v_star[i][j] = v[i][j] + dt * (-0.5 * (3 * H_v[i][j] - H_1_v[i][j])
+            data->v_star[i][j] = v[i][j] + dt * (-0.5 * (3.0 * H_v[i][j] - H_1_v[i][j])
                                             - 1.0/data->h * (P[i-1][j] - P[i-1][j-1])
-                                            + 1/SQRT_GR * (v[i+1][j] + v[i-1][j] + v[i][j+1] + v[i][j-1] - 4.0 * v[i][j])/(data->h * data->h)
+                                            + 1.0/SQRT_GR * (v[i+1][j] + v[i-1][j] + v[i][j+1] + v[i][j-1] - 4.0 * v[i][j])/(data->h * data->h)
                                             + 0.5 * (T[i][j] + T[i][j+1]));
         }
     }
 
     for(i = 0; i < data->n_v_points; i++){
         if(in_mixer(v_x(data->v_i[i], data->h), v_y(data->v_j[i], data->h), t, &us, &vs)){
-            data->v_star[data->v_i[i]][data->v_j[i]] /= (1 + DT_DTAU);
+            data->v_star[data->v_i[i]][data->v_j[i]] /= (1.0 + DT_DTAU);
             data->v_star[data->v_i[i]][data->v_j[i]] += vs;
         }
     }
@@ -507,10 +454,10 @@ void compute_H_n(data_sim *data){
     double **u = data->u;
     double **v = data->v;
     double **T = data->T;
-    double f = 1/(4 * data->h);
+    double f = 1.0/(4.0 * data->h);
     for(i = 1; i < data->nxu - 1; i++){
         for(j = 1; j < data->nyu - 1; j++){
-            data->H_u[i][j] = 1 * f * (
+            data->H_u[i][j] = 1.0 * f * (
                                         // (u[i][j] + u[i+1][j]) * (u[i+1][j] - u[i][j])
                                         // + (u[i][j] + u[i-1][j]) * (u[i][j] - u[i-1][j])
                                         // + (v[i][j] + v[i+1][j]) * (u[i][j+1] - u[i][j])
@@ -526,7 +473,7 @@ void compute_H_n(data_sim *data){
 
     for(i = 1; i < data->nxv - 1; i++){
         for(j = 1; j < data->nyv - 1; j++){
-            data->H_v[i][j] = 1 * f * (
+            data->H_v[i][j] = 1.0 * f * (
                                         // (u[i-1][j] + u[i-1][j+1]) * (v[i][j] - v[i-1][j])
                                         // + (u[i][j] + u[i][j+1]) * (v[i+1][j] - v[i][j])
                                         // + (v[i][j+1] + v[i][j]) * (v[i][j+1] - v[i][j])
@@ -541,13 +488,17 @@ void compute_H_n(data_sim *data){
     }
 
     for(i = 1; i < data->nxT - 1; i++){
-        for(j = 1; j < data->nyT; j++){
-            data->H_T[i][j] = 0.5 * f * (
-                                u[i][j] * (T[i+1][j] - T[i][j]) + u[i-1][j] * (T[i][j] - T[i-1][j])
-                                + v[i][j] * (T[i][j+1] - T[i][j]) + v[i][j-1] * (T[i][j] - T[i][j-1])
+        for(j = 1; j < data->nyT - 1; j++){
+            data->H_T[i][j] = 2.0 * f * (
+                                u[i][j] * (T[i+1][j] - T[i][j])
+                                + u[i-1][j] * (T[i][j] - T[i-1][j])
+                                + v[i][j] * (T[i][j+1] - T[i][j])
+                                + v[i][j-1] * (T[i][j] - T[i][j-1])
                                 
-                                // + u[i][j] * (T[i+1][j] + T[i][j]) - u[i-1][j] * (T[i-1][j] + T[i][j])
-                                // + v[i][j] * (T[i][j+1] + T[i][j]) - v[i][j-1] * (T[i][j-1] + T[i][j])
+                                // + u[i][j] * (T[i+1][j] + T[i][j])
+                                // - u[i-1][j] * (T[i-1][j] + T[i][j])
+                                // + v[i][j] * (T[i][j+1] + T[i][j])
+                                // - v[i][j-1] * (T[i][j-1] + T[i][j])
                                 );
         }
     }
@@ -590,16 +541,29 @@ int in_mixer(double x, double y, double t, double *us, double *vs){
     *us = -r * OMEGA_S * sin(theta);
     *vs = r * OMEGA_S * cos(theta);
     
-    return r <= 1.0/25.0 || r <= 1.0/5.0 * cos(3 * (theta - OMEGA_S * t));
+    return r <= 1.0/25.0 || r <= 1.0/5.0 * cos(3.0 * (theta - OMEGA_S * t));
 }
 
 double compute_Ts(data_sim *data){
     double Ts = 0.0;
     int i;
-    for(i = 0; i < data->n_T_points; i++){
-        Ts += data->T[data->T_i[i]][data->T_j[i]];
+    if(data->n_T_points != 0){
+        for(i = 0; i < data->n_T_points; i++){
+            Ts += data->T[data->T_i[i]][data->T_j[i]];
+        }
+        Ts /= data->n_T_points;
     }
-    return Ts/(data->n_T_points);
+    return Ts;
+}
+
+void compute_diagnostics(problem_struct *problem){
+    double Tavg = compute_Tavg(problem->sim_data);
+    double sigT = compute_sigT(problem->sim_data, Tavg);
+    double qe = compute_qe(problem->sim_data);
+    double Ts = compute_Ts(problem->sim_data);
+    compute_Reh(problem);
+    compute_Rehw(problem);
+    fprintf(problem->diag_file, "iter : %d Tavg : %e sigT : %e qe : %e Ts : %e Rehw : %e Reh : %e\n", problem->iter, Tavg, sigT, qe, Ts, problem->Rehw, problem->Reh);
 }
 
 double compute_Tavg(data_sim *data){
@@ -628,4 +592,13 @@ double compute_sigT(data_sim *data, double Tavg){
         sigT -= (data->T[data->T_i[i]][data->T_j[i]] - Tavg) * (data->T[data->T_i[i]][data->T_j[i]] - Tavg)/((data->nxT - 2) * (data->nyT - 2) - data->n_T_points);
     }
     return sigT;
+}
+
+double compute_qe(data_sim *data){
+    int i;
+    double qe = 0;
+    for(i = 1; i < data->nxT - 1; i++){
+        qe += data->T[i][data->nyT - 1] - data->T[i][data->nyT - 2];
+    }
+    return qe * -3.0/2.0;
 }

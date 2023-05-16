@@ -3,3 +3,5 @@
 run.dSYM
 images
 project.dSYM
+output
+*.gif

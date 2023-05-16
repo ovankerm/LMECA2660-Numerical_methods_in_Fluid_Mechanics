@@ -27,12 +27,11 @@ void computeRHS(double *rhs, PetscInt rowStart, PetscInt rowEnd, int nx, int ny,
     for(r=rowStart; r<rowEnd ; r++){
         i = (int) r/(ny - 1);
         j = r%(ny - 1);
-        // printf("i : %d, j : %d, %e\n", i, j, (u_star[i+1][j+1] - u_star[i][j+1] + v_star[i+1][j+1] - v_star[i+1][j]));
 		rhs[r] = 1/dt * (u_star[i+1][j+1] - u_star[i][j+1] + v_star[i+1][j+1] - v_star[i+1][j]); /*WRITE HERE (nabla dot u_star)/dt at each mesh point r*/
         /*Do not forget that the solution for the Poisson equation is defined within a constant.
         One point from Phi must then be set to an abritrary constant.*/
     }
-    rhs[(nx - 1) * (ny - 1) - 1] = 0.0;
+    rhs[(ny - 1)/2] = 0.0;
 }
 
 /*To call at each time step after computation of U_star. This function solves the poisson equation*/
@@ -147,37 +146,11 @@ void computeLaplacianMatrix(Mat A, int rowStart, int rowEnd, int Nx, int Ny, dou
     MatSetValue(A, r, r-1 , 1.0/h, INSERT_VALUES);
     MatSetValue(A, r, r-(Ny-1) , 1.0/h, INSERT_VALUES);
 
-    r = rowStart + (Nx - 1) * (Ny - 1) - 1;
-    MatSetValue(A, r, r, 1.0/h, INSERT_VALUES);
+    r = rowStart + (Ny-1)/2;
+    MatSetValue(A, r, r, 1.0, INSERT_VALUES);
     MatSetValue(A, r, r-1, 0.0, INSERT_VALUES);
-    MatSetValue(A, r, r-(Ny-1), 0.0, INSERT_VALUES);
-
-
-    // int r;
-    // MatSetValue(A, 0, 0 , 1.0, INSERT_VALUES);
-    // for (r = rowStart + 1; r < rowStart + Ny; r++){
-    //     MatSetValue(A, r, r, -4.0, INSERT_VALUES);
-    //     MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-    //     MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-    //     MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
-    // }
-    // for (;r < rowEnd - Ny; r++){
-    //     MatSetValue(A, r, r, -4.0, INSERT_VALUES);
-    //     MatSetValue(A, r, r+1 , 1.0, INSERT_VALUES);
-    //     MatSetValue(A, r, r-1 , 1.0, INSERT_VALUES);
-    //     MatSetValue(A, r, r+(Ny-1) , 1.0, INSERT_VALUES);
-    //     MatSetValue(A, r, r-(Ny-1) , 1.0, INSERT_VALUES);
-    // }
-    // MatSetValue(A, 1, 1 , -4.0, INSERT_VALUES);
-    // MatSetValue(A, 1, 2 , 1.0, INSERT_VALUES);
-    // MatSetValue(A, 1, 0 , 1.0, INSERT_VALUES);
-    // for (r = rowStart + 2; r < rowEnd; r++){
-    //     MatSetValue(A, r, r, -4.0, INSERT_VALUES);
-    //     /*USING MATSETVALUE FUNCTION, INSERT THE GOOD FACTOR AT THE GOOD PLACE*/
-    //     /*Be careful; the solution from the system solved is defined within a constant.
-    //     One point from Phi must then be set to an abritrary constant.*/
-    // }
-
+    MatSetValue(A, r, r+1, 0.0, INSERT_VALUES);
+    MatSetValue(A, r, r+(Ny-1), 0.0, INSERT_VALUES);
 }
 
 /*To call during the initialization of your solver, before the begin of the time loop*/

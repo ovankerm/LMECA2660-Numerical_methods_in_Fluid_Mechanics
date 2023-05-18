@@ -12,6 +12,9 @@ int main(int argc, char *argv[]){
         for(i = 0; i < N_frame; i++){
             iterate(problem);
             iterate(problem);
+            iterate(problem);
+            iterate(problem);
+            iterate(problem);
         }
         problem_to_file(problem);
         compute_diagnostics(problem);

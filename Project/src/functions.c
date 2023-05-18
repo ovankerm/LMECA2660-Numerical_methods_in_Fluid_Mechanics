@@ -25,6 +25,10 @@ double T_y(int j, double h){
 }
 
 problem_struct *create_problem(int nx, int mixer){
+    /*
+    mixer = 1 if mixer or = 0 if no mixer
+    nx : number of cells in the horizontal direction + 1
+    */
     problem_struct *problem = malloc(sizeof(problem_struct));
     
     problem->sim_data = init_data(nx, mixer);
@@ -458,11 +462,6 @@ void compute_H_n(data_sim *data){
     for(i = 1; i < data->nxu - 1; i++){
         for(j = 1; j < data->nyu - 1; j++){
             data->H_u[i][j] = 1.0 * f * (
-                                        // (u[i][j] + u[i+1][j]) * (u[i+1][j] - u[i][j])
-                                        // + (u[i][j] + u[i-1][j]) * (u[i][j] - u[i-1][j])
-                                        // + (v[i][j] + v[i+1][j]) * (u[i][j+1] - u[i][j])
-                                        // + (v[i][j-1] + v[i+1][j-1]) * (u[i][j] - u[i][j-1])
-                                        
                                         + (u[i+1][j] + u[i][j]) * (u[i+1][j] + u[i][j])
                                         - (u[i][j] + u[i-1][j]) * (u[i][j] + u[i-1][j])
                                         + (u[i][j+1] + u[i][j]) * (v[i][j] + v[i+1][j])
@@ -474,11 +473,6 @@ void compute_H_n(data_sim *data){
     for(i = 1; i < data->nxv - 1; i++){
         for(j = 1; j < data->nyv - 1; j++){
             data->H_v[i][j] = 1.0 * f * (
-                                        // (u[i-1][j] + u[i-1][j+1]) * (v[i][j] - v[i-1][j])
-                                        // + (u[i][j] + u[i][j+1]) * (v[i+1][j] - v[i][j])
-                                        // + (v[i][j+1] + v[i][j]) * (v[i][j+1] - v[i][j])
-                                        // + (v[i][j] + v[i][j-1]) * (v[i][j] - v[i-1][j])
-                                        
                                         + (u[i][j] + u[i][j+1]) * (v[i+1][j] + v[i][j])
                                         - (u[i-1][j] + u[i-1][j+1]) * (v[i][j] + v[i-1][j])
                                         + (v[i][j+1] + v[i][j]) * (v[i][j] + v[i][j+1])
@@ -494,11 +488,6 @@ void compute_H_n(data_sim *data){
                                 + u[i-1][j] * (T[i][j] - T[i-1][j])
                                 + v[i][j] * (T[i][j+1] - T[i][j])
                                 + v[i][j-1] * (T[i][j] - T[i][j-1])
-                                
-                                // + u[i][j] * (T[i+1][j] + T[i][j])
-                                // - u[i-1][j] * (T[i-1][j] + T[i][j])
-                                // + v[i][j] * (T[i][j+1] + T[i][j])
-                                // - v[i][j-1] * (T[i][j-1] + T[i][j])
                                 );
         }
     }

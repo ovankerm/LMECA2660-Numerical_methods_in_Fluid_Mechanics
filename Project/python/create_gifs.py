@@ -9,7 +9,7 @@ levels_Rehw = np.linspace(0, 40, num=50)
 levels_Reh = np.linspace(0, 25, num=50)
 
 size = (5,7.5)
-diter = 1050
+diter = 1310
 n_iter = 1000
 
 fig, ax = plt.subplots(figsize=size)
@@ -92,7 +92,7 @@ def animate(t):
 
     # X_T, Y_T = np.meshgrid(np.linspace(0, 2/3, endpoint=True, num=(Nx)), np.linspace(0, 1, endpoint=True, num=(Ny)))
 
-    # cs_T = ax.contourf(X_T, Y_T, T, cmap='Blues', levels=levels_U, extend='min')
+    # cs_T = ax.contourf(X_T, Y_T, T, cmap='cividis', levels=levels_U, extend='min')
     # ax.fill(r * np.cos(theta) + 1/3, r * np.sin(theta) + 1/3, color='grey')
     # ax.fill(1/25 * np.cos(theta) + 1/3, 1/25 * np.sin(theta) + 1/3, color='grey')
 

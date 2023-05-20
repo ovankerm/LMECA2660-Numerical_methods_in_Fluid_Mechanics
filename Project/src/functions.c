@@ -36,7 +36,7 @@ problem_struct *create_problem(int nx, int mixer){
     problem->poiss_data = malloc(sizeof(Poisson_data));
     initialize_poisson_solver(problem->poiss_data, problem->sim_data->nx, problem->sim_data->ny, problem->sim_data->h);
 
-    problem->dt = fmin(0.5 * problem->sim_data->h * problem->sim_data->h * SQRT_GR, 0.5 * problem->sim_data->h/0.25);
+    problem->dt = fmin(0.2 * problem->sim_data->h * problem->sim_data->h * SQRT_GR, 0.5 * problem->sim_data->h/0.25);
     problem->t = 0.0;
 
     problem->iter = 0;
@@ -385,7 +385,7 @@ void compute_T(data_sim *data, double dt, double t){
     for(i = 0; i < data->n_T_points; i++){
         if(in_mixer(T_x(data->T_i[i], data->h), T_y(data->T_j[i], data->h), t, &trash, &trash)){
             data->T[data->T_i[i]][data->T_j[i]] /= (1.0 + DT_DTAU);
-            data->T[data->T_i[i]][data->T_j[i]] += Ts;
+            data->T[data->T_i[i]][data->T_j[i]] += DT_DTAU/(1.0 + DT_DTAU) * Ts;
         }
     }
 }
@@ -432,7 +432,7 @@ void compute_v_star(data_sim *data, double dt, double t){
     for(i = 0; i < data->n_u_points; i++){
         if(in_mixer(u_x(data->u_i[i], data->h), u_y(data->u_j[i], data->h), t, &us, &vs)){
             data->u_star[data->u_i[i]][data->u_j[i]] /= (1.0 + DT_DTAU);
-            data->u_star[data->u_i[i]][data->u_j[i]] += us;
+            data->u_star[data->u_i[i]][data->u_j[i]] += DT_DTAU/(1.0 + DT_DTAU) * us;
         }
     }
 
@@ -448,7 +448,7 @@ void compute_v_star(data_sim *data, double dt, double t){
     for(i = 0; i < data->n_v_points; i++){
         if(in_mixer(v_x(data->v_i[i], data->h), v_y(data->v_j[i], data->h), t, &us, &vs)){
             data->v_star[data->v_i[i]][data->v_j[i]] /= (1.0 + DT_DTAU);
-            data->v_star[data->v_i[i]][data->v_j[i]] += vs;
+            data->v_star[data->v_i[i]][data->v_j[i]] += DT_DTAU/(1.0 + DT_DTAU) * vs;
         }
     }
 }
